@@ -73,7 +73,7 @@ function readDb() {
 function writeDb(nextDb) {
   ensureDbFile();
   const users = (nextDb.users ?? []).map(({ online, ...user }) => user);
-  const safeDb = { ...defaultDb, ...nextDb, users, communityPosts: nextDb.communityPosts ?? [], directMessages: nextDb.directMessages ?? {} };
+  const safeDb = { ...defaultDb, ...nextDb, currentUserId: null, users, communityPosts: nextDb.communityPosts ?? [], directMessages: nextDb.directMessages ?? {} };
   fs.writeFileSync(dbFile, JSON.stringify(safeDb, null, 2));
   void persistCloudDb(safeDb);
   return safeDb;

@@ -37,6 +37,7 @@ export type CampusDB = {
 };
 
 const STORAGE_KEY = "studflow-db";
+const SESSION_KEY = "studflow-session-user-id";
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
 
 const defaultUser: CampusUser = {
@@ -92,6 +93,7 @@ export const createDefaultDB = (): CampusDB => ({
 });
 
 let dbState: CampusDB = createDefaultDB();
+let localSessionUserId: string | null = null;
 const listeners = new Set<() => void>();
 let serverSocket: Socket | null = null;
 
@@ -107,7 +109,7 @@ function ensureSocket() {
     });
 
     serverSocket.on("db:update", (nextState: CampusDB) => {
-      dbState = nextState;
+      dbState = { ...nextState, currentUserId: localSessionUserId };
       listeners.forEach((listener) => listener());
     });
 
@@ -131,7 +133,7 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
     }
 
     const parsed = (await response.json()) as CampusDB;
-    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users };
+    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId };
     listeners.forEach((listener) => listener());
     ensureSocket();
     return dbState;
@@ -143,6 +145,7 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
 }
 
 export async function hydrateDb(): Promise<CampusDB> {
+  localSessionUserId = await AsyncStorage.getItem(SESSION_KEY);
   const serverState = await hydrateFromServer();
   if (serverState) {
     return serverState;
@@ -151,13 +154,13 @@ export async function hydrateDb(): Promise<CampusDB> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      dbState = createDefaultDB();
+      dbState = { ...createDefaultDB(), currentUserId: localSessionUserId };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
       return dbState;
     }
 
     const parsed = JSON.parse(raw) as CampusDB;
-    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users };
+    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId };
     listeners.forEach((listener) => listener());
     return dbState;
   } catch (error) {
@@ -305,6 +308,8 @@ export async function loginUser(email: string, password: string) {
     }));
   }
 
+  localSessionUserId = user.id;
+  await AsyncStorage.setItem(SESSION_KEY, user.id);
   updateDb((draft) => ({ ...draft, currentUserId: user.id }));
   return user;
 }
@@ -380,10 +385,14 @@ export async function registerUser(input: {
       return link;
     }),
   }));
+  localSessionUserId = newUser.id;
+  await AsyncStorage.setItem(SESSION_KEY, newUser.id);
   return newUser;
 }
 
 export function logoutUser() {
+  localSessionUserId = null;
+  void AsyncStorage.removeItem(SESSION_KEY);
   updateDb((draft) => ({ ...draft, currentUserId: null }));
 }
 
