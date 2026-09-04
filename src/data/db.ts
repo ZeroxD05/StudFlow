@@ -402,6 +402,8 @@ export function deleteCurrentUser() {
     return;
   }
 
+  localSessionUserId = null;
+  void AsyncStorage.removeItem(SESSION_KEY);
   updateDb((draft) => ({
     ...draft,
     currentUserId: null,
