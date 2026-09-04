@@ -138,6 +138,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "10mb" }));
 
+app.get("/", (_, res) => {
+  res.json({ name: "StudFlow API", status: "running", health: "/health" });
+});
+
 app.get("/health", (_, res) => {
   res.json({ ok: true, status: "healthy", users: db.users.length, port, storage: supabase ? "supabase" : "local" });
 });
