@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { addFriend, blockFriend, getDirectMessageThreadId, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
+import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 
 export default function MatchingScreen() {
@@ -12,6 +12,11 @@ export default function MatchingScreen() {
     ? (currentUser.friends ?? [])
         .map((friendId) => db.users.find((user) => user.id === friendId))
         .filter((friend): friend is NonNullable<typeof friend> => Boolean(friend))
+    : [];
+  const friendRequests = currentUser
+    ? (currentUser.friendRequests ?? [])
+        .map((requesterId) => db.users.find((user) => user.id === requesterId))
+        .filter((requester): requester is NonNullable<typeof requester> => Boolean(requester))
     : [];
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -34,6 +39,7 @@ export default function MatchingScreen() {
     ? db.users.find((user) =>
         user.id !== currentUser?.id
         && !(currentUser?.friends ?? []).includes(user.id)
+        && !(currentUser?.friendRequests ?? []).includes(user.id)
         && (user.internalEmail ?? user.email).toLowerCase() === searchEmail.trim().toLowerCase()
       ) ?? null
     : null;
@@ -119,7 +125,7 @@ export default function MatchingScreen() {
 
           <View style={styles.composer}>
             <View style={styles.messageInputShell}>
-              <TextInput value={draft} onChangeText={setDraft} multiline placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
+              <TextInput value={draft} onChangeText={setDraft} multiline blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
               <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
                 <Ionicons name="arrow-up" size={19} color={colors.white} />
               </TouchableOpacity>
@@ -159,6 +165,28 @@ export default function MatchingScreen() {
         {searchResult ? <Text style={styles.searchSuccess}>{searchResult.name} gefunden. Tippe auf + zum Hinzufügen.</Text> : null}
       </View>
       <ScrollView contentContainerStyle={styles.friendList} showsVerticalScrollIndicator={false}>
+        {friendRequests.length > 0 ? (
+          <View style={styles.requestsSection}>
+            <Text style={styles.requestsTitle}>Freundschaftsanfragen</Text>
+            {friendRequests.map((requester) => (
+              <View key={requester.id} style={styles.requestRow}>
+                <View style={[styles.friendAvatar, { backgroundColor: requester.avatarColor }]}>
+                  <Text style={styles.avatarText}>{requester.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.friendInfo}>
+                  <Text style={styles.friendName}>{requester.name}</Text>
+                  <Text style={styles.friendPreview}>möchte dein Freund werden</Text>
+                </View>
+                <TouchableOpacity style={styles.acceptButton} onPress={() => acceptFriendRequest(requester.id)}>
+                  <Ionicons name="checkmark" size={18} color={colors.white} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.rejectButton} onPress={() => rejectFriendRequest(requester.id)}>
+                  <Ionicons name="close" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : null}
         <TouchableOpacity style={styles.friendRow} onPress={() => setSelectedFriendId("support-account")} activeOpacity={0.75}>
           <View style={[styles.friendAvatar, { backgroundColor: supportContact.avatarColor }]}>
             <Text style={styles.avatarText}>A</Text>
@@ -179,7 +207,7 @@ export default function MatchingScreen() {
             <Text style={styles.emptyFriendsText}>Füge zuerst Freunde hinzu, um ihnen Nachrichten zu schreiben.</Text>
           </View>
         ) : friends.map((friend) => {
-          const friendMessages = db.directMessages[friend.id] ?? [];
+          const friendMessages = (currentUser ? db.directMessages[getDirectMessageThreadId(currentUser.id, friend.id)] : null) ?? db.directMessages[friend.id] ?? [];
           const lastMessage = friendMessages[friendMessages.length - 1];
           return (
             <TouchableOpacity key={friend.id} style={styles.friendRow} onPress={() => setSelectedFriendId(friend.id)} activeOpacity={0.75}>
@@ -224,6 +252,11 @@ const styles = StyleSheet.create({
   addButtonDisabled: { opacity: 0.45 },
   searchHint: { color: colors.textMuted, fontSize: 12, marginTop: spacing.sm },
   searchSuccess: { color: colors.success, fontSize: 12, marginTop: spacing.sm },
+  requestsSection: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
+  requestsTitle: { color: colors.textPrimary, fontWeight: "800", marginBottom: spacing.sm },
+  requestRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  acceptButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.success, alignItems: "center", justifyContent: "center", marginLeft: spacing.xs },
+  rejectButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.backgroundAlt, alignItems: "center", justifyContent: "center", marginLeft: spacing.xs },
   friendList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   friendRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   friendAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },

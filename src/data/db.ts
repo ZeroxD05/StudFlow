@@ -19,6 +19,7 @@ export type CampusUser = {
   profileImage?: string | null;
   username: string;
   friends?: string[];
+  friendRequests?: string[];
   online?: boolean;
   showOnlineStatus?: boolean;
 };
@@ -428,12 +429,16 @@ export function getFriendsForCurrentUser() {
 }
 
 export function addFriend(friendId: string) {
+  return sendFriendRequest(friendId);
+}
+
+export function sendFriendRequest(friendId: string) {
   const currentUser = getCurrentUser();
   if (!currentUser || !friendId) {
     return null;
   }
 
-  if ((currentUser.friends ?? []).includes(friendId)) {
+  if ((currentUser.friends ?? []).includes(friendId) || (currentUser.friendRequests ?? []).includes(friendId)) {
     return currentUser;
   }
 
@@ -441,15 +446,48 @@ export function addFriend(friendId: string) {
     ...draft,
     users: draft.users.map((user) => {
       if (user.id === currentUser.id) {
-        return { ...user, friends: [...(user.friends ?? []), friendId] };
-      }
-      if (user.id === friendId) {
-        return { ...user, friends: [...new Set([...(user.friends ?? []), currentUser.id])] };
+        return { ...user, friendRequests: [...(user.friendRequests ?? []), friendId] };
       }
       return user;
     }),
   }));
 
+  return getCurrentUser();
+}
+
+export function acceptFriendRequest(requesterId: string) {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return null;
+
+  updateDb((draft) => ({
+    ...draft,
+    users: draft.users.map((user) => {
+      if (user.id === currentUser.id) {
+        return {
+          ...user,
+          friendRequests: (user.friendRequests ?? []).filter((id) => id !== requesterId),
+          friends: [...new Set([...(user.friends ?? []), requesterId])],
+        };
+      }
+      if (user.id === requesterId) {
+        return { ...user, friends: [...new Set([...(user.friends ?? []), currentUser.id])] };
+      }
+      return user;
+    }),
+  }));
+  return getCurrentUser();
+}
+
+export function rejectFriendRequest(requesterId: string) {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return null;
+
+  updateDb((draft) => ({
+    ...draft,
+    users: draft.users.map((user) => user.id === currentUser.id
+      ? { ...user, friendRequests: (user.friendRequests ?? []).filter((id) => id !== requesterId) }
+      : user),
+  }));
   return getCurrentUser();
 }
 
@@ -502,7 +540,7 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
   const currentUser = getCurrentUser();
   const trimmed = text.trim();
 
-  if (!currentUser || !trimmed) {
+  if (!currentUser || !trimmed || !(currentUser.friends ?? []).includes(friendId)) {
     return null;
   }
 

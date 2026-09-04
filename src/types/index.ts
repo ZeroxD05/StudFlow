@@ -94,6 +94,7 @@ export type CampusUser = {
   profileImage?: string | null;
   username: string;
   friends?: string[];
+  friendRequests?: string[];
   online?: boolean;
   showOnlineStatus?: boolean;
 };
