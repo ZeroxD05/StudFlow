@@ -7,7 +7,7 @@ import { addCommentToPost, addCommunityPost, addFriend, deleteCommunityPost, tog
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { CommunityPost } from "@/types";
 
-function PostCard({ post, onLike, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment }: { post: CommunityPost; onLike: () => void; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void }) {
+function PostCard({ post, isLiked, onLike, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment }: { post: CommunityPost; isLiked: boolean; onLike: () => void; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void }) {
   const initial = post.author.charAt(0).toUpperCase();
   return (
     <Card style={styles.postCard}>
@@ -40,7 +40,7 @@ function PostCard({ post, onLike, canAddFriend, onAddFriend, canDelete, onDelete
 
       <View style={styles.postFooter}>
         <TouchableOpacity style={styles.footerAction} onPress={onLike}>
-          <Ionicons name={post.likedByCurrentUser ? "heart" : "heart-outline"} size={16} color={post.likedByCurrentUser ? colors.accent : colors.textMuted} />
+          <Ionicons name={isLiked ? "heart" : "heart-outline"} size={16} color={isLiked ? colors.accent : colors.textMuted} />
           <Text style={styles.footerText}>{post.likes}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerAction} onPress={onToggleThread}>
@@ -158,6 +158,7 @@ export default function CommunityScreen() {
           return (
             <PostCard
               post={item}
+              isLiked={Boolean(currentUserId && item.likedByUserIds?.includes(currentUserId))}
               canAddFriend={canAddFriend}
               canDelete={item.authorId === currentUser?.id || (!item.authorId && item.author === currentUser?.name)}
               onDelete={() => confirmDeletePost(item.id)}

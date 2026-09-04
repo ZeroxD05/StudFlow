@@ -654,6 +654,11 @@ export function updateCurrentUser(changes: Partial<CampusUser>) {
 }
 
 export function toggleLike(postId: string) {
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    return;
+  }
+
   updateDb((draft) => ({
     ...draft,
     communityPosts: draft.communityPosts.map((post) => {
@@ -661,11 +666,16 @@ export function toggleLike(postId: string) {
         return post;
       }
 
-      const liked = !!post.likedByCurrentUser;
+      const likedByUserIds = post.likedByUserIds ?? [];
+      const liked = likedByUserIds.includes(currentUser.id);
+      const nextLikedByUserIds = liked
+        ? likedByUserIds.filter((userId) => userId !== currentUser.id)
+        : [...likedByUserIds, currentUser.id];
       return {
         ...post,
+        likedByUserIds: nextLikedByUserIds,
         likedByCurrentUser: !liked,
-        likes: liked ? Math.max(0, post.likes - 1) : post.likes + 1,
+        likes: nextLikedByUserIds.length,
       };
     }),
   }));

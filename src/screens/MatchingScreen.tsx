@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,6 +36,13 @@ export default function MatchingScreen() {
       ? db.directMessages[`support:${currentUser?.id ?? ""}`] ?? []
       : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
+  const messagesScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (selectedFriend) {
+      requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
+    }
+  }, [messages.length, selectedFriendId]);
   const searchResult = searchEmail.trim().toLowerCase().endsWith("@study2buddy.de")
     ? db.users.find((user) =>
         user.id !== currentUser?.id
@@ -113,7 +120,7 @@ export default function MatchingScreen() {
               </View>
             ) : null}
           </View>
-          <ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView ref={messagesScrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {messages.length === 0 ? (
               <View style={styles.emptyChat}>
                 <Ionicons name="chatbubble-ellipses-outline" size={30} color={colors.primary} />
@@ -134,7 +141,7 @@ export default function MatchingScreen() {
 
           <View style={styles.composer}>
             <View style={styles.messageInputShell}>
-              <TextInput value={draft} onChangeText={setDraft} multiline blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
+              <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
               <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
                 <Ionicons name="arrow-up" size={19} color={colors.white} />
               </TouchableOpacity>

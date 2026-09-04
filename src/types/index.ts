@@ -75,6 +75,7 @@ export type CommunityPost = {
   commentsList?: CommunityComment[];
   timeAgo: string;
   likedByCurrentUser?: boolean;
+  likedByUserIds?: string[];
   threadName?: string;
   unread?: number;
   profileImage?: string | null;

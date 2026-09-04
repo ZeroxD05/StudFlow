@@ -89,8 +89,10 @@ export default function ProfileScreen() {
         updateCurrentUser({ profileImage: imageUri });
         Alert.alert("Foto gespeichert", "Das Profilbild wurde aktualisiert.");
       }
+    } catch (error: any) {
+      Alert.alert("Profilbild konnte nicht geladen werden", error?.message ?? "Bitte versuche es erneut.");
     } finally {
-      setTimeout(() => setIsUploadingImage(false), 400);
+      setIsUploadingImage(false);
     }
   };
 
