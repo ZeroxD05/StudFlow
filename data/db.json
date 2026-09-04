@@ -1,0 +1,104 @@
+{
+  "currentUserId": "demo-user",
+  "users": [
+    {
+      "id": "demo-user",
+      "name": "Ata",
+      "email": "ata2005hh@gmail.com",
+      "password": "Atailayda05",
+      "major": "Informatik",
+      "semester": 4,
+      "bio": "Frontend- und App-Entwicklerin mit Fokus auf UX und Lernplattformen.",
+      "avatarColor": "#7C6CFF",
+      "campus": "Hochschule Flensburg",
+      "profileImage": null,
+      "username": "ata",
+      "internalEmail": "ata@study2buddy.de",
+      "linkedEmail": "ata2005hh@gmail.com",
+      "showOnlineStatus": true
+    },
+    {
+      "id": "user-1788469301117",
+      "name": "Tom",
+      "email": "tom@study2buddy.de",
+      "internalEmail": "tom@study2buddy.de",
+      "password": "Atailayda05",
+      "major": "Informatik",
+      "semester": 4,
+      "bio": "Frontend- und Lern-Apps mit Fokus auf UX.",
+      "avatarColor": "#FF7A59",
+      "campus": "Hochschule Flensburg",
+      "profileImage": null,
+      "username": "tom",
+      "linkedEmail": "tom@hochschule-flensburg.de"
+    }
+  ],
+  "quickLinks": [
+    {
+      "id": "moodle",
+      "label": "Moodle",
+      "icon": "book-outline",
+      "url": "https://moodle.org/"
+    },
+    {
+      "id": "campus",
+      "label": "Campus-Portal",
+      "icon": "school-outline",
+      "url": "https://www.studieren-in-hamburg.de/"
+    },
+    {
+      "id": "mail",
+      "label": "Uni-Mail",
+      "icon": "mail-outline",
+      "url": "https://mail.google.com/"
+    },
+    {
+      "id": "library",
+      "label": "Bibliothek",
+      "icon": "library-outline",
+      "url": "https://www.google.com/search?q=Universit%C3%A4tsbibliothek"
+    },
+    {
+      "id": "cafeteria",
+      "label": "Mensaplan",
+      "icon": "restaurant-outline",
+      "url": "https://www.google.com/search?q=Mensaplan%20Hochschule%20Flensburg"
+    },
+    {
+      "id": "grades",
+      "label": "Noten",
+      "icon": "stats-chart-outline",
+      "url": "https://www.google.com/search?q=Noten%20Informatik"
+    }
+  ],
+  "todaySchedule": [],
+  "scheduleImage": null,
+  "buddyProfiles": [],
+  "jobListings": [],
+  "communityPosts": [],
+  "gradeEntries": [],
+  "directMessages": {
+    "ata": [
+      {
+        "id": "support-1788468659520",
+        "sender": "me",
+        "text": "Hi",
+        "timestamp": "22:50"
+      },
+      {
+        "id": "support-1788469335069",
+        "sender": "me",
+        "text": "Hey",
+        "timestamp": "23:02"
+      }
+    ],
+    "support:user-1788469301117": [
+      {
+        "id": "support-1788469694791",
+        "sender": "me",
+        "text": "Hey",
+        "timestamp": "23:08"
+      }
+    ]
+  }
+}

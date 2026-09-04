@@ -1,0 +1,99 @@
+export type QuickLink = {
+  id: string;
+  label: string;
+  icon: keyof typeof import("@expo/vector-icons/build/Ionicons").default.glyphMap;
+  url?: string;
+};
+
+export type GradeEntry = {
+  id: string;
+  course: string;
+  topic: string;
+  grade: string;
+  date: string;
+};
+
+export type DirectMessage = {
+  id: string;
+  sender: "me" | "match";
+  text: string;
+  timestamp: string;
+};
+
+export type ScheduleItem = {
+  id: string;
+  day: string;
+  time: string;
+  course: string;
+  room: string;
+  type: "Vorlesung" | "Übung" | "Seminar" | "Labor";
+};
+
+export type BuddyProfile = {
+  id: string;
+  name: string;
+  degree: string;
+  semester: number;
+  offers: string[];
+  wants: string[];
+  matchScore: number;
+  avatarColor: string;
+  campus: string;
+  connected?: boolean;
+  requestSent?: boolean;
+};
+
+export type JobListing = {
+  id: string;
+  title: string;
+  company: string;
+  type: "Werkstudent" | "Praktikum" | "Minijob";
+  location: string;
+  postedDaysAgo: number;
+  tags: string[];
+  saved?: boolean;
+};
+
+export type CommunityComment = {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: string;
+  me?: boolean;
+};
+
+export type CommunityPost = {
+  id: string;
+  authorId?: string;
+  author: string;
+  avatarColor: string;
+  content: string;
+  course?: string;
+  likes: number;
+  comments: number;
+  commentsList?: CommunityComment[];
+  timeAgo: string;
+  likedByCurrentUser?: boolean;
+  threadName?: string;
+  unread?: number;
+  profileImage?: string | null;
+};
+
+export type CampusUser = {
+  id: string;
+  name: string;
+  email: string;
+  internalEmail?: string;
+  linkedEmail?: string;
+  password: string;
+  major: string;
+  semester: number;
+  bio: string;
+  avatarColor: string;
+  campus: string;
+  profileImage?: string | null;
+  username: string;
+  friends?: string[];
+  online?: boolean;
+  showOnlineStatus?: boolean;
+};
