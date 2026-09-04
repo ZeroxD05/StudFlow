@@ -15,6 +15,7 @@ export type GradeEntry = {
 
 export type DirectMessage = {
   id: string;
+  senderId?: string;
   sender: "me" | "match";
   text: string;
   timestamp: string;

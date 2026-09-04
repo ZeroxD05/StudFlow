@@ -122,10 +122,10 @@ export default function MatchingScreen() {
               </View>
             ) : (
               messages.map((message) => (
-                <View key={message.id} style={[styles.messageRow, message.sender === "me" && styles.messageRowMe]}>
-                  <View style={[styles.bubble, message.sender === "me" ? styles.bubbleMe : styles.bubbleFriend]}>
-                    <Text style={[styles.messageText, message.sender === "me" && styles.messageTextMe]}>{message.text}</Text>
-                    <Text style={[styles.messageTime, message.sender === "me" && styles.messageTimeMe]}>{message.timestamp}</Text>
+                <View key={message.id} style={[styles.messageRow, message.senderId === currentUser?.id && styles.messageRowMe]}>
+                  <View style={[styles.bubble, message.senderId === currentUser?.id ? styles.bubbleMe : styles.bubbleFriend]}>
+                    <Text style={[styles.messageText, message.senderId === currentUser?.id && styles.messageTextMe]}>{message.text}</Text>
+                    <Text style={[styles.messageTime, message.senderId === currentUser?.id && styles.messageTimeMe]}>{message.timestamp}</Text>
                   </View>
                 </View>
               ))

@@ -546,6 +546,7 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
 
   const message: DirectMessage = {
     id: `dm-${Date.now()}`,
+    senderId: currentUser.id,
     sender: "me",
     text: trimmed,
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
@@ -577,6 +578,7 @@ export function sendSupportMessage(text: string) {
 
   const message: DirectMessage = {
     id: `support-${Date.now()}`,
+    senderId: currentUser.id,
     sender: "me",
     text: trimmed,
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
