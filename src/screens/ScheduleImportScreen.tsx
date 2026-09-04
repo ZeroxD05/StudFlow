@@ -194,6 +194,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 900,
+    alignSelf: "center",
   },
   tabsRow: {
     flexDirection: "row",

@@ -472,7 +472,7 @@ export function removeFriend(friendId: string) {
       };
     }),
     directMessages: Object.fromEntries(
-      Object.entries(draft.directMessages).filter(([id]) => id !== friendId)
+      Object.entries(draft.directMessages).filter(([id]) => id !== friendId && id !== getDirectMessageThreadId(currentUser.id, friendId))
     ),
   }));
 
@@ -485,7 +485,17 @@ export function blockFriend(friendId: string) {
 }
 
 export function getDirectMessagesForFriend(friendId: string) {
-  return dbState.directMessages[friendId] ?? [];
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    return [];
+  }
+
+  const threadId = getDirectMessageThreadId(currentUser.id, friendId);
+  return dbState.directMessages[threadId] ?? dbState.directMessages[friendId] ?? [];
+}
+
+export function getDirectMessageThreadId(firstUserId: string, secondUserId: string) {
+  return `dm:${[firstUserId, secondUserId].sort().join(":")}`;
 }
 
 export function sendDirectMessageToFriend(friendId: string, text: string) {
@@ -507,7 +517,10 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     ...draft,
     directMessages: {
       ...draft.directMessages,
-      [friendId]: [...(draft.directMessages[friendId] ?? []), message],
+      [getDirectMessageThreadId(currentUser.id, friendId)]: [
+        ...(draft.directMessages[getDirectMessageThreadId(currentUser.id, friendId)] ?? []),
+        message,
+      ],
     },
   }));
 

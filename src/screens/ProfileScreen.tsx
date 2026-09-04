@@ -232,6 +232,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
   },
   pageEyebrow: {
     color: colors.primary,

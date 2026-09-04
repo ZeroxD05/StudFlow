@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { addFriend, blockFriend, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
+import { addFriend, blockFriend, getDirectMessageThreadId, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 
 export default function MatchingScreen() {
@@ -28,7 +28,7 @@ export default function MatchingScreen() {
   const messages = selectedFriend
     ? isSupportChat
       ? db.directMessages[`support:${currentUser?.id ?? ""}`] ?? []
-      : db.directMessages[selectedFriend.id] ?? []
+      : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
   const searchResult = searchEmail.trim().toLowerCase().endsWith("@study2buddy.de")
     ? db.users.find((user) =>
@@ -78,6 +78,7 @@ export default function MatchingScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.desktopShell}>
           <View style={styles.chatTopBar}>
             <TouchableOpacity style={styles.backButton} onPress={() => setSelectedFriendId(null)} hitSlop={8}>
               <Ionicons name="arrow-back" size={24} color={colors.primary} />
@@ -97,7 +98,6 @@ export default function MatchingScreen() {
               <Ionicons name="ellipsis-vertical" size={20} color={isSupportChat ? colors.border : colors.textMuted} />
             </TouchableOpacity>
           </View>
-
           <ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {messages.length === 0 ? (
               <View style={styles.emptyChat}>
@@ -125,6 +125,7 @@ export default function MatchingScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -132,6 +133,7 @@ export default function MatchingScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      <View style={styles.desktopShell}>
       <View style={styles.header}>
         <Text style={typography.h1}>Freunde</Text>
         <Text style={styles.subtitle}>Schreib deinen Freunden direkt.</Text>
@@ -203,6 +205,7 @@ export default function MatchingScreen() {
           );
         })}
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -210,6 +213,7 @@ export default function MatchingScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
+  desktopShell: { flex: 1, width: "100%", maxWidth: 760, alignSelf: "center" },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md },
   subtitle: { color: colors.textSecondary, marginTop: 4 },
   searchBox: { marginHorizontal: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
