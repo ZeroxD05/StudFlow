@@ -325,7 +325,6 @@ export async function registerUser(input: {
 }) {
   const name = input.name.trim();
   const username = sanitizeUsername(input.username);
-  const normalizedName = name.toLocaleLowerCase("de-DE");
   if (!name) {
     throw new Error("Bitte gib deinen Namen ein.");
   }
@@ -334,9 +333,6 @@ export async function registerUser(input: {
   }
   if (input.password.length < 6) {
     throw new Error("Das Passwort muss mindestens 6 Zeichen lang sein.");
-  }
-  if (dbState.users.some((user) => user.name.trim().toLocaleLowerCase("de-DE") === normalizedName)) {
-    throw new Error("Dieser Name ist bereits vergeben.");
   }
   if (dbState.users.some((user) => user.username.toLowerCase() === username)) {
     throw new Error("Dieser Benutzername ist bereits vergeben.");
@@ -556,9 +552,6 @@ export function updateCurrentUser(changes: Partial<CampusUser>) {
   }
 
   const nextBaseName = changes.name?.trim() ? changes.name.trim() : current.name;
-  if (changes.name && dbState.users.some((user) => user.id !== current.id && user.name.trim().toLocaleLowerCase("de-DE") === nextBaseName.toLocaleLowerCase("de-DE"))) {
-    throw new Error("Dieser Name ist bereits vergeben.");
-  }
   if (changes.linkedEmail !== undefined) {
     const linkedEmail = changes.linkedEmail.trim().toLowerCase();
     if (linkedEmail && !isUniversityEmail(linkedEmail)) {

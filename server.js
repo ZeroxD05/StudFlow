@@ -168,8 +168,7 @@ app.post("/api/auth/register", async (req, res) => {
   const candidateEmail = `${usernameBase}@study2buddy.de`;
 
   const existingUser = db.users.find(
-    (user) => user.name.trim().toLowerCase() === cleanName.toLowerCase()
-      || user.email.toLowerCase() === candidateEmail
+    (user) => user.email.toLowerCase() === candidateEmail
       || user.username.toLowerCase() === usernameBase.toLowerCase()
       || (email && (user.linkedEmail ?? "").toLowerCase() === String(email).trim().toLowerCase())
   );
@@ -229,18 +228,13 @@ app.get("/api/users", (_, res) => {
 
 app.patch("/api/db", (req, res) => {
   const users = Array.isArray(req.body?.users) ? req.body.users : db.users;
-  const seenNames = new Set();
   const seenUsernames = new Set();
   const seenUniversityEmails = new Set();
   const seenAppEmails = new Set();
   for (const user of users) {
-    const name = String(user.name || "").trim().toLowerCase();
     const username = String(user.username || "").trim().toLowerCase();
     const universityEmail = String(user.linkedEmail || "").trim().toLowerCase();
     const appEmail = String(user.internalEmail || user.email || "").trim().toLowerCase();
-    if (name && seenNames.has(name)) {
-      return res.status(409).json({ error: "Namen müssen eindeutig sein." });
-    }
     if (universityEmail && seenUniversityEmails.has(universityEmail)) {
       return res.status(409).json({ error: "Uni-Mails müssen eindeutig sein." });
     }
@@ -250,7 +244,6 @@ app.patch("/api/db", (req, res) => {
     if (appEmail && seenAppEmails.has(appEmail)) {
       return res.status(409).json({ error: "App-Mails müssen eindeutig sein." });
     }
-    if (name) seenNames.add(name);
     if (universityEmail) seenUniversityEmails.add(universityEmail);
     if (username) seenUsernames.add(username);
     if (appEmail) seenAppEmails.add(appEmail);
