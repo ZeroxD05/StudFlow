@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import bcrypt from "bcryptjs";
+import * as Crypto from "expo-crypto";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem } from "@/types";
@@ -96,6 +96,7 @@ const listeners = new Set<() => void>();
 let serverSocket: Socket | null = null;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+const hashPassword = (password: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
 
 function ensureSocket() {
   if (!serverSocket) {
@@ -290,18 +291,14 @@ export async function loginUser(email: string, password: string) {
     (candidate.internalEmail ?? candidate.email).toLowerCase() === normalized
   );
 
-  const passwordMatches = user
-    ? user.password.startsWith("$2")
-      ? await bcrypt.compare(password, user.password)
-      : user.password === password
-    : false;
+  const passwordHash = await hashPassword(password);
+  const passwordMatches = user ? user.password === password || user.password === passwordHash : false;
 
   if (!user || !passwordMatches) {
     throw new Error("E-Mail oder Passwort falsch.");
   }
 
-  if (!user.password.startsWith("$2")) {
-    const passwordHash = await bcrypt.hash(password, 12);
+  if (user.password === password) {
     updateDb((draft) => ({
       ...draft,
       users: draft.users.map((candidate) => candidate.id === user.id ? { ...candidate, password: passwordHash } : candidate),
@@ -341,7 +338,7 @@ export async function registerUser(input: {
   }
   const generatedEmail = buildStudyEmail(username);
   const generatedInternalEmail = generatedEmail;
-  const passwordHash = await bcrypt.hash(input.password, 12);
+  const passwordHash = await hashPassword(input.password);
   const exists = dbState.users.some(
     (user) =>
       user.email.toLowerCase() === generatedEmail ||
