@@ -80,7 +80,7 @@ const defaultGradeEntries: GradeEntry[] = [];
 const defaultDirectMessages: Record<string, DirectMessage[]> = {};
 
 export const createDefaultDB = (): CampusDB => ({
-  currentUserId: defaultUser.id,
+  currentUserId: null,
   users: [defaultUser],
   quickLinks: defaultQuickLinks,
   todaySchedule: defaultSchedule,

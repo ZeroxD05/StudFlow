@@ -19,8 +19,8 @@ import { colors, radius, spacing, typography } from "@/theme/theme";
 export default function LoginScreen() {
   const db = useAppDb();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [username, setUsername] = useState("ata");
-  const [password, setPassword] = useState("Atailayda05");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
