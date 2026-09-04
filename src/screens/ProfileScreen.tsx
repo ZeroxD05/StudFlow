@@ -128,6 +128,7 @@ export default function ProfileScreen() {
                 <View style={[styles.accountBadgeDot, currentUser.showOnlineStatus === false && styles.accountBadgeDotHidden]} />
                 <Text style={styles.accountBadgeText}>{currentUser.showOnlineStatus === false ? "Unsichtbares Konto" : "Aktives Konto"}</Text>
               </View>
+              <Text style={styles.friendCount}>{(currentUser.friends ?? []).length} {(currentUser.friends ?? []).length === 1 ? "Freund" : "Freunde"}</Text>
             </View>
           </View>
 
@@ -298,6 +299,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     marginTop: 3,
+  },
+  friendCount: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: spacing.sm,
   },
   accountBadge: {
     flexDirection: "row",

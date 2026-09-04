@@ -21,6 +21,7 @@ export default function MatchingScreen() {
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
+  const [chatActionsVisible, setChatActionsVisible] = useState(false);
   const supportContact = db.users.find((user) => user.username.toLowerCase() === "ata") ?? {
     id: "support-account",
     name: "Ata",
@@ -54,29 +55,25 @@ export default function MatchingScreen() {
     setDraft("");
   };
 
-  const openChatActions = () => {
+  const performFriendAction = (action: "remove" | "block") => {
     if (!selectedFriend || isSupportChat) {
       return;
     }
 
-    Alert.alert(selectedFriend.name, "Was möchtest du tun?", [
+    setChatActionsVisible(false);
+    const execute = () => {
+      if (action === "remove") removeFriend(selectedFriend.id);
+      if (action === "block") blockFriend(selectedFriend.id);
+      setSelectedFriendId(null);
+    };
+    const label = action === "remove" ? "Freund entfernen" : "Blockieren";
+    if (Platform.OS === "web") {
+      if (window.confirm(`${label}: ${selectedFriend.name}?`)) execute();
+      return;
+    }
+    Alert.alert(label, `${selectedFriend.name} wirklich ${action === "remove" ? "entfernen" : "blockieren"}?`, [
       { text: "Abbrechen", style: "cancel" },
-      {
-        text: "Freund entfernen",
-        style: "destructive",
-        onPress: () => {
-          removeFriend(selectedFriend.id);
-          setSelectedFriendId(null);
-        },
-      },
-      {
-        text: "Blockieren",
-        style: "destructive",
-        onPress: () => {
-          blockFriend(selectedFriend.id);
-          setSelectedFriendId(null);
-        },
-      },
+      { text: label, style: "destructive", onPress: execute },
     ]);
   };
 
@@ -100,9 +97,21 @@ export default function MatchingScreen() {
               <Text style={styles.chatName}>{selectedFriend.name}</Text>
               <Text style={styles.chatStatus}>{isSupportChat ? "StudFlow-Support" : selectedFriend.online ? "Online" : "Offline"}</Text>
             </View>
-            <TouchableOpacity onPress={openChatActions} disabled={isSupportChat} hitSlop={8}>
+            <TouchableOpacity onPress={() => setChatActionsVisible((visible) => !visible)} disabled={isSupportChat} hitSlop={8}>
               <Ionicons name="ellipsis-vertical" size={20} color={isSupportChat ? colors.border : colors.textMuted} />
             </TouchableOpacity>
+            {chatActionsVisible && !isSupportChat ? (
+              <View style={styles.chatActionsMenu}>
+                <TouchableOpacity style={styles.chatActionItem} onPress={() => performFriendAction("remove")}>
+                  <Ionicons name="person-remove-outline" size={17} color={colors.textPrimary} />
+                  <Text style={styles.chatActionText}>Freund entfernen</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.chatActionItem} onPress={() => performFriendAction("block")}>
+                  <Ionicons name="ban-outline" size={17} color="#C0392B" />
+                  <Text style={[styles.chatActionText, styles.chatActionDanger]}>Blockieren</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
           <ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {messages.length === 0 ? (
@@ -271,6 +280,10 @@ const styles = StyleSheet.create({
   emptyFriendsTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800", marginTop: spacing.md },
   emptyFriendsText: { color: colors.textSecondary, textAlign: "center", lineHeight: 20, marginTop: spacing.sm },
   chatTopBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  chatActionsMenu: { position: "absolute", top: 58, right: spacing.md, zIndex: 10, minWidth: 190, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.xs, shadowColor: colors.primary, shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  chatActionItem: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  chatActionText: { color: colors.textPrimary, fontWeight: "700", fontSize: 13 },
+  chatActionDanger: { color: "#C0392B" },
   backButton: { marginRight: spacing.sm },
   chatAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   chatIdentity: { flex: 1, marginLeft: spacing.sm },
