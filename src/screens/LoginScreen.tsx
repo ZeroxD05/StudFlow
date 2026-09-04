@@ -88,10 +88,8 @@ export default function LoginScreen() {
         campus: registerForm.campus,
         bio: registerForm.bio,
       });
-      setMode("login");
       setUsername(createdUser.username);
       setPassword(registerForm.password);
-      Alert.alert("Registrierung erfolgreich", "Dein Profil wurde gespeichert.");
     } catch (error: any) {
       Alert.alert("Registrierung fehlgeschlagen", error?.message ?? "Bitte versuche es erneut.");
     }

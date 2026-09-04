@@ -37,7 +37,7 @@ export type CampusDB = {
 };
 
 const STORAGE_KEY = "studflow-db";
-const SESSION_KEY = "studflow-session-user-id";
+const SESSION_KEY = "studflow-session-user-id-v2";
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
 
 const defaultUser: CampusUser = {
@@ -371,6 +371,8 @@ export async function registerUser(input: {
     showOnlineStatus: true,
   };
 
+  localSessionUserId = newUser.id;
+  await AsyncStorage.setItem(SESSION_KEY, newUser.id);
   updateDb((draft) => ({
     ...draft,
     users: [...draft.users, newUser],
@@ -385,8 +387,6 @@ export async function registerUser(input: {
       return link;
     }),
   }));
-  localSessionUserId = newUser.id;
-  await AsyncStorage.setItem(SESSION_KEY, newUser.id);
   return newUser;
 }
 
