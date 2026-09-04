@@ -73,6 +73,10 @@ export default function LoginScreen() {
       Alert.alert("Ungültiger Benutzername", "Der Benutzername darf nur Buchstaben und Zahlen enthalten.");
       return;
     }
+    if (usernameTaken) {
+      Alert.alert("Benutzername vergeben", "Bitte wähle einen anderen Benutzernamen.");
+      return;
+    }
     if (registerForm.password.length < 6) {
       Alert.alert("Passwort zu kurz", "Das Passwort muss mindestens 6 Zeichen lang sein.");
       return;
@@ -178,6 +182,7 @@ export default function LoginScreen() {
                   style={[styles.input, usernameTaken && styles.inputError]}
                 />
                 {usernameTaken ? <Text style={styles.errorText}>Dieser Benutzername ist bereits vergeben.</Text> : null}
+                {!usernameTaken && normalizedRegisterUsername ? <Text style={styles.availableText}>Benutzername verfügbar.</Text> : null}
                 <Text style={styles.usernameHint}>Hinweis: Deinen Benutzernamen kannst du später nicht mehr ändern.</Text>
                 <Text style={styles.inlineMail}>Deine App-Mail: {registerForm.username ? `${registerForm.username}@study2buddy.de` : "benutzername@study2buddy.de"}</Text>
 
@@ -197,7 +202,7 @@ export default function LoginScreen() {
                 </View>
 
 
-                <TouchableOpacity style={[styles.primaryButton, usernameTaken && styles.disabledButton]} onPress={handleRegister} disabled={usernameTaken}>
+                <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
                   <Text style={styles.primaryButtonText}>Profil erstellen</Text>
                 </TouchableOpacity>
               </>
@@ -327,6 +332,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "#C0392B",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  availableText: {
+    color: colors.success,
     fontSize: 12,
     lineHeight: 17,
     marginTop: -spacing.sm,
