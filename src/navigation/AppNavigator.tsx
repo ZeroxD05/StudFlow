@@ -61,7 +61,7 @@ function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: Bott
       {barWidth > 0 ? (
         <Animated.View
           pointerEvents="none"
-          style={[styles.tabIndicator, { width: tabWidth * 0.34, transform: [{ translateX: Animated.multiply(indicatorPosition, tabWidth) }] }]}
+          style={[styles.tabIndicator, { width: tabWidth * 0.34, left: tabWidth * 0.33, transform: [{ translateX: Animated.multiply(indicatorPosition, tabWidth) }] }]}
         />
       ) : null}
       {state.routes.map((route, index) => {
