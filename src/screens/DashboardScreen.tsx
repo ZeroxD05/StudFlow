@@ -76,6 +76,7 @@ export default function DashboardScreen({ navigation }: any) {
   }, []);
 
   const currentDate = new Date();
+  const greeting = currentDate.getHours() < 11 ? "Guten Morgen" : currentDate.getHours() < 18 ? "Guten Mittag" : "Guten Abend";
   const todayName = weekdayNames[currentDate.getDay()];
   const todayDateLabel = currentDate.toLocaleDateString("de-DE", {
     day: "2-digit",
@@ -572,7 +573,7 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
       </Modal>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={typography.caption}>Guten Morgen</Text>
+        <Text style={typography.caption}>{greeting}</Text>
         <Text style={[typography.h1, styles.greeting]}>{user ? user.name : "Dein Campus-Start."}</Text>
 
         <SectionHeader title="Schnellzugriff" subtitle="Alles, was du täglich brauchst" />
