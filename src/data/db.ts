@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem, Tenant } from "@/types";
+import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem, Tenant, UniversityNews } from "@/types";
 
 export type CampusUser = {
   id: string;
@@ -32,6 +32,7 @@ export type CampusUser = {
 export type CampusDB = {
   currentUserId: string | null;
   tenants: Tenant[];
+  tenantNews: UniversityNews[];
   users: CampusUser[];
   quickLinks: QuickLink[];
   todaySchedule: ScheduleItem[];
@@ -93,6 +94,7 @@ const defaultDirectMessages: Record<string, DirectMessage[]> = {};
 export const createDefaultDB = (): CampusDB => ({
   currentUserId: null,
   tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo" }],
+  tenantNews: [],
   users: [defaultUser],
   quickLinks: defaultQuickLinks,
   todaySchedule: defaultSchedule,
@@ -372,6 +374,22 @@ export async function createTenant(name: string, emailDomain: string) {
   });
   if (!response.ok) throw new Error("Hochschule konnte nicht angelegt werden.");
   return await response.json() as Tenant;
+}
+
+export async function createUniversityNews(title: string, body: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/news`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ title, body }),
+  });
+  if (!response.ok) throw new Error("News konnte nicht veröffentlicht werden.");
+  return await response.json() as UniversityNews;
+}
+
+export async function createTenantAdmin(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string }) {
+  const response = await fetch(`${SERVER_URL}/api/admin/users`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(input) });
+  if (!response.ok) throw new Error("Uni-Admin konnte nicht angelegt werden.");
+  return await response.json() as CampusUser;
 }
 
 export const getCurrentUser = () =>

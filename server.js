@@ -74,6 +74,7 @@ const requireAdmin = (req, res, next) => {
 const defaultDb = {
   currentUserId: null,
   tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo", emailDomain: "study2buddy.de" }],
+  tenantNews: [],
   users: [],
   quickLinks: [
     { id: "moodle", label: "Moodle", icon: "book-outline", url: "https://moodle.org/" },
@@ -110,7 +111,7 @@ function readDb() {
     const raw = fs.readFileSync(dbFile, "utf8");
     const parsed = JSON.parse(raw);
     const users = (parsed.users ?? []).map((user) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo", role: user.role || (user.username === "ata" ? "admin" : "student") }));
-    return { ...defaultDb, ...parsed, users, tenants: parsed.tenants ?? defaultDb.tenants, communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
+    return { ...defaultDb, ...parsed, users, tenants: parsed.tenants ?? defaultDb.tenants, tenantNews: parsed.tenantNews ?? [], communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
   } catch (error) {
     fs.writeFileSync(dbFile, JSON.stringify(defaultDb, null, 2));
     return { ...defaultDb };
@@ -177,6 +178,7 @@ function emitDb() {
       currentUserId: socket.data.userId || null,
       users: tenantUsers.map((user) => ({ ...user, online: user.showOnlineStatus !== false && onlineUserIds.has(user.id) })),
       communityPosts: db.communityPosts.filter((post) => tenantUserIds.has(post.authorId)),
+      tenantNews: (db.tenantNews || []).filter((news) => news.tenantId === tenantId),
       directMessages: Object.fromEntries(Object.entries(db.directMessages || {}).filter(([threadId]) => threadId.split(":").some((id) => tenantUserIds.has(id)))),
       scheduleByUserId: Object.fromEntries(Object.entries(db.scheduleByUserId || {}).filter(([userId]) => tenantUserIds.has(userId))),
     });
@@ -242,6 +244,7 @@ app.get("/api/db", (_, res) => {
     currentUserId: authUser.id,
     users: tenantUsers,
     communityPosts: db.communityPosts.filter((post) => tenantUserIds.has(post.authorId)),
+    tenantNews: (db.tenantNews || []).filter((news) => news.tenantId === authUser.tenantId),
     directMessages: Object.fromEntries(Object.entries(db.directMessages || {}).filter(([threadId]) => threadId.split(":").some((id) => tenantUserIds.has(id)))),
     scheduleByUserId: Object.fromEntries(Object.entries(db.scheduleByUserId || {}).filter(([userId]) => tenantUserIds.has(userId))),
   });
@@ -347,6 +350,29 @@ app.post("/api/admin/tenants", requireAdmin, (req, res) => {
   db.tenants = [...(db.tenants || []), tenant];
   db = writeDb(db);
   res.status(201).json(tenant);
+});
+
+app.post("/api/admin/news", requireAdmin, (req, res) => {
+  const title = String(req.body?.title || "").trim();
+  const body = String(req.body?.body || "").trim();
+  if (!title || !body) return res.status(400).json({ error: "Titel und Inhalt fehlen." });
+  const news = { id: createId("news"), tenantId: req.authUser.tenantId, title, body, createdAt: new Date().toISOString() };
+  db.tenantNews = [news, ...(db.tenantNews || [])];
+  db = writeDb(db);
+  emitDb();
+  res.status(201).json(news);
+});
+
+app.post("/api/admin/users", requireAdmin, async (req, res) => {
+  const { tenantId, name, username, linkedEmail, password } = req.body || {};
+  const tenant = (db.tenants || []).find((entry) => entry.id === tenantId);
+  if (!tenant || !name || !username || !linkedEmail || !password) return res.status(400).json({ error: "Adminangaben fehlen." });
+  if (db.users.some((user) => user.username === username || user.linkedEmail === linkedEmail)) return res.status(409).json({ error: "Benutzername oder Uni-Mail existiert bereits." });
+  const user = { id: createId("user"), tenantId, role: "admin", name: String(name).trim(), username: String(username).trim().toLowerCase(), email: `${String(username).trim().toLowerCase()}@study2buddy.de`, internalEmail: `${String(username).trim().toLowerCase()}@study2buddy.de`, linkedEmail: String(linkedEmail).trim().toLowerCase(), password: await bcrypt.hash(String(password), 12), major: "", semester: 1, bio: "", avatarColor: "#1E4FD8", campus: tenant.name, friends: [], showOnlineStatus: true };
+  db.users.push(user);
+  db = writeDb(db);
+  emitDb();
+  res.status(201).json(user);
 });
 
 app.patch("/api/schedules", requireAuth, (req, res) => {

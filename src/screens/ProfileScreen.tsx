@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createTenant, deleteCurrentUser, listTenants, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
+import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, listTenants, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -16,6 +16,9 @@ export default function ProfileScreen() {
   const [tenantName, setTenantName] = useState("");
   const [tenantDomain, setTenantDomain] = useState("");
   const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([]);
+  const [newsTitle, setNewsTitle] = useState("");
+  const [newsBody, setNewsBody] = useState("");
+  const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
@@ -330,6 +333,19 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             {tenants.map((tenant) => <Text key={tenant.id} style={styles.tenantRow}>{tenant.name}</Text>)}
+            <Text style={styles.adminSubheading}>News veröffentlichen</Text>
+            <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
+            <TextInput value={newsBody} onChangeText={setNewsBody} placeholder="Nachricht der Hochschule" placeholderTextColor={colors.textMuted} style={[styles.adminInput, styles.newsAdminInput]} multiline />
+            <TouchableOpacity style={styles.primaryButton} onPress={async () => { if (!newsTitle.trim() || !newsBody.trim()) return; await createUniversityNews(newsTitle, newsBody); setNewsTitle(""); setNewsBody(""); }}>
+              <Text style={styles.primaryButtonText}>News veröffentlichen</Text>
+            </TouchableOpacity>
+            <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
+            {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
+              <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={field === "tenantId" ? "Tenant-ID" : field} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
+            ))}
+            <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createTenantAdmin(adminForm); setAdminForm({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" }); }}>
+              <Text style={styles.primaryButtonText}>Uni-Admin erstellen</Text>
+            </TouchableOpacity>
           </View>
         ) : null}
         <View style={styles.legalLinks}>
@@ -631,6 +647,9 @@ const styles = StyleSheet.create({
   adminInput: { flex: 1, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingVertical: 12 },
   adminAddButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   tenantRow: { color: colors.textSecondary, fontSize: 13, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
+  newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
+  adminFieldSpacing: { marginTop: spacing.sm },
   legalLinks: {
     flexDirection: "row",
     justifyContent: "center",

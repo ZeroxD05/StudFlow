@@ -53,7 +53,7 @@ const weekdayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag",
 const EXTERNAL_LINK_WARNING_KEY = "studflow-external-link-warning-dismissed";
 
 export default function DashboardScreen({ navigation }: any) {
-  const { quickLinks, todaySchedule, currentUserId, users, gradeEntries } = useAppDb();
+  const { quickLinks, todaySchedule, currentUserId, users, gradeEntries, tenantNews } = useAppDb();
   const [activeQuickLink, setActiveQuickLink] = useState<string | null>(null);
   const [gradeForm, setGradeForm] = useState({ course: "", topic: "", grade: "", date: new Date().toISOString().slice(0, 10) });
   const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
@@ -579,6 +579,18 @@ export default function DashboardScreen({ navigation }: any) {
         <Text style={typography.caption}>{greeting}</Text>
         <Text style={[typography.h1, styles.greeting]}>{user ? user.name : "Dein Campus-Start."}</Text>
 
+        {tenantNews.length > 0 ? (
+          <View style={styles.newsSection}>
+            <SectionHeader title="News deiner Hochschule" subtitle="Aktuelle Informationen" />
+            {tenantNews.slice(0, 3).map((news) => (
+              <View key={news.id} style={styles.newsItem}>
+                <Text style={styles.newsTitle}>{news.title}</Text>
+                <Text style={styles.newsBody}>{news.body}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <SectionHeader title="Schnellzugriff" subtitle="Alles, was du täglich brauchst" />
         <View style={styles.grid}>
           {quickLinks.map((link) => (
@@ -866,6 +878,28 @@ const styles = StyleSheet.create({
   greeting: {
     marginTop: 2,
     marginBottom: spacing.lg,
+  },
+  newsSection: {
+    marginBottom: spacing.lg,
+  },
+  newsItem: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  newsTitle: {
+    color: colors.textPrimary,
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  newsBody: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
   },
   grid: {
     flexDirection: "row",

@@ -112,3 +112,11 @@ export type Tenant = {
   name: string;
   emailDomain?: string;
 };
+
+export type UniversityNews = {
+  id: string;
+  tenantId: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
