@@ -3,7 +3,7 @@ import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, PanResponder, P
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, toggleChatNotifications, useAppDb } from "@/data/db";
+import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, toggleChatNotifications, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { DirectMessage } from "@/types";
 
@@ -25,7 +25,7 @@ const formatMessageTime = (message: DirectMessage) => {
   return date ? date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : message.timestamp;
 };
 
-const SUPPORT_SWIPE_TUTORIAL_KEY = "studflow-support-swipe-tutorial-seen";
+const SWIPE_TUTORIAL_KEY = "studflow-swipe-tutorial-seen";
 
 function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted, onPress, allowContactActions = true }: { children: React.ReactNode; onBlock: () => void; onRemove: () => void; onToggleMute: () => void; isMuted: boolean; onPress: () => void; allowContactActions?: boolean }) {
   const translateX = useRef(new Animated.Value(0)).current;
@@ -110,26 +110,13 @@ export default function MatchingScreen({ navigation, route }: any) {
   const [chatActionsVisible, setChatActionsVisible] = useState(false);
   const [webKeyboardOffset, setWebKeyboardOffset] = useState(0);
   const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
-  const supportContact = db.users.find((user) => user.username.toLowerCase() === "ata") ?? {
-    id: "support-account",
-    name: "Ata",
-    avatarColor: "#7C6CFF",
-    profileImage: null,
-    online: true,
-  };
-  const isSupportChat = selectedFriendId === "support-account";
-  const selectedFriend = friends.find((friend) => friend.id === selectedFriendId) ?? (isSupportChat ? supportContact : null);
+  const selectedFriend = friends.find((friend) => friend.id === selectedFriendId) ?? null;
   const requestedFriendId = route?.params?.friendId ?? null;
   const messages = selectedFriend
-    ? isSupportChat
-      ? db.directMessages[`support:${currentUser?.id ?? ""}`] ?? []
-      : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
+    ? db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
-  const supportMessages = db.directMessages[`support:${currentUser?.id ?? ""}`] ?? [];
-  const supportThreadId = `support:${currentUser?.id ?? ""}`;
-  const supportUnreadCount = getUnreadDirectMessageCount(supportMessages, currentUser?.id ?? null, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(supportThreadId)));
   const messagesScrollRef = useRef<ScrollView>(null);
-  const activeThreadId = isSupportChat ? `support:${currentUser?.id ?? ""}` : currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
+  const activeThreadId = currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
 
   useEffect(() => {
     if (requestedFriendId && friends.some((friend) => friend.id === requestedFriendId)) {
@@ -156,10 +143,10 @@ export default function MatchingScreen({ navigation, route }: any) {
     }
 
     let isMounted = true;
-    AsyncStorage.getItem(SUPPORT_SWIPE_TUTORIAL_KEY).then((value) => {
+    AsyncStorage.getItem(SWIPE_TUTORIAL_KEY).then((value) => {
       if (isMounted && value !== "seen") {
         setShowSwipeTutorial(true);
-        void AsyncStorage.setItem(SUPPORT_SWIPE_TUTORIAL_KEY, "seen");
+        void AsyncStorage.setItem(SWIPE_TUTORIAL_KEY, "seen");
       }
     });
 
@@ -209,16 +196,12 @@ export default function MatchingScreen({ navigation, route }: any) {
 
   const sendMessage = () => {
     if (!selectedFriend || !draft.trim()) return;
-    if (isSupportChat) {
-      sendSupportMessage(draft);
-    } else {
-      sendDirectMessageToFriend(selectedFriend.id, draft);
-    }
+    sendDirectMessageToFriend(selectedFriend.id, draft);
     setDraft("");
   };
 
   const performFriendAction = (action: "remove" | "block") => {
-    if (!selectedFriend || isSupportChat) {
+    if (!selectedFriend) {
       return;
     }
 
@@ -286,7 +269,7 @@ export default function MatchingScreen({ navigation, route }: any) {
             )}
             <View style={styles.chatIdentity}>
               <Text style={styles.chatName}>{selectedFriend.name}</Text>
-              <Text style={styles.chatStatus}>{isSupportChat ? "StudFlow-Support" : selectedFriend.online ? "Online" : "Offline"}</Text>
+              <Text style={styles.chatStatus}>{selectedFriend.online ? "Online" : "Offline"}</Text>
             </View>
             <TouchableOpacity onPress={() => setChatActionsVisible((visible) => !visible)} hitSlop={8}>
               <Ionicons name="ellipsis-vertical" size={20} color={colors.textMuted} />
@@ -297,8 +280,7 @@ export default function MatchingScreen({ navigation, route }: any) {
                   <Ionicons name={currentUser?.mutedChatThreadIds?.includes(activeThreadId) ? "notifications-outline" : "notifications-off-outline"} size={17} color={colors.textPrimary} />
                   <Text style={styles.chatActionText}>{currentUser?.mutedChatThreadIds?.includes(activeThreadId) ? "Chat laut stellen" : "Chat stummschalten"}</Text>
                 </TouchableOpacity>
-                {!isSupportChat ? (
-                  <>
+                <>
                 <TouchableOpacity style={styles.chatActionItem} onPress={() => performFriendAction("remove")}>
                   <Ionicons name="person-remove-outline" size={17} color={colors.textPrimary} />
                   <Text style={styles.chatActionText}>Freund entfernen</Text>
@@ -307,8 +289,7 @@ export default function MatchingScreen({ navigation, route }: any) {
                   <Ionicons name="ban-outline" size={17} color="#C0392B" />
                   <Text style={[styles.chatActionText, styles.chatActionDanger]}>Blockieren</Text>
                 </TouchableOpacity>
-                  </>
-                ) : null}
+                </>
               </View>
             ) : null}
           </View>
@@ -428,29 +409,6 @@ export default function MatchingScreen({ navigation, route }: any) {
             </TouchableOpacity>
           </View>
         ) : null}
-        <SwipeableFriendRow
-          onPress={() => setSelectedFriendId("support-account")}
-          onBlock={() => undefined}
-          onRemove={() => undefined}
-          onToggleMute={() => toggleChatNotifications(supportThreadId)}
-          isMuted={Boolean(currentUser?.mutedChatThreadIds?.includes(supportThreadId))}
-          allowContactActions={false}
-        >
-          <View style={styles.friendRow}>
-            <View style={[styles.friendAvatar, { backgroundColor: supportContact.avatarColor }]}>
-              <Text style={styles.avatarText}>A</Text>
-            </View>
-            <View style={styles.friendInfo}>
-              <View style={styles.friendTitleRow}>
-                <Text style={styles.friendName}>Ata</Text>
-                <View style={styles.onlineDot} />
-              </View>
-              <Text style={styles.friendPreview}>StudFlow-Support</Text>
-            </View>
-            {supportUnreadCount > 0 ? <View style={styles.messageCountBadge}><Text style={styles.messageCountText}>{supportUnreadCount > 99 ? "99+" : supportUnreadCount}</Text></View> : null}
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </View>
-        </SwipeableFriendRow>
         {friends.length === 0 ? (
           <View style={styles.emptyFriends}>
             <Ionicons name="people-outline" size={38} color={colors.primary} />

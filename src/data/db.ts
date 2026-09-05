@@ -861,46 +861,6 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
   return message;
 }
 
-export function sendSupportMessage(text: string) {
-  const currentUser = getCurrentUser();
-  const trimmed = text.trim();
-
-  const canWrite = currentUser?.username === "ata" || (currentUser?.linkedEmail ? isUniversityEmail(currentUser.linkedEmail) : false);
-
-  if (!currentUser || !canWrite || !trimmed) {
-    return null;
-  }
-
-  const message: DirectMessage = {
-    id: `support-${Date.now()}`,
-    senderId: currentUser.id,
-    sender: "me",
-    text: trimmed,
-    timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
-    createdAt: new Date().toISOString(),
-  };
-
-  void fetch(`${SERVER_URL}/api/direct-messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ threadId: `support:${currentUser.id}`, text: trimmed }),
-  }).then(async (response) => {
-    if (!response.ok) {
-      throw new Error(`Support-DM konnte nicht synchronisiert werden (${response.status}).`);
-    }
-    const serverMessage = await response.json() as DirectMessage;
-    updateDb((draft) => {
-      const threadId = `support:${currentUser.id}`;
-      const thread = draft.directMessages[threadId] ?? [];
-      return thread.some((entry) => entry.id === serverMessage.id) ? draft : { ...draft, directMessages: { ...draft.directMessages, [threadId]: [...thread, serverMessage] } };
-    }, false);
-  }).catch((error) => {
-    console.warn(error);
-  });
-
-  return message;
-}
-
 export function updateCurrentUser(changes: Partial<CampusUser>) {
   const current = getCurrentUser();
   if (!current) {
