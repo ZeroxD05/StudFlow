@@ -185,6 +185,13 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
 export async function hydrateDb(): Promise<CampusDB> {
   localSessionUserId = await AsyncStorage.getItem(SESSION_KEY);
   localAuthToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  if (localSessionUserId && !localAuthToken) {
+    localSessionUserId = null;
+    await AsyncStorage.removeItem(SESSION_KEY);
+    dbState = { ...createDefaultDB(), currentUserId: null };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
+    return dbState;
+  }
   const serverState = await hydrateFromServer();
   if (serverState) {
     return serverState;
