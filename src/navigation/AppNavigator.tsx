@@ -33,15 +33,22 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
   Match: "people",
   Stundenplan: "calendar",
   Community: "chatbubbles",
-  Profil: "person",
+  Profil: "settings",
+};
+
+const scheduleDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const getScheduleStart = (time: string) => {
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 };
 
 export default function AppNavigator() {
-  const { currentUserId, directMessages, users } = useAppDb();
+  const { currentUserId, directMessages, users, todaySchedule } = useAppDb();
   const currentUser = users.find((user) => user.id === currentUserId) ?? null;
-  const [notification, setNotification] = useState<{ id: string; account: string; text: string; profileImage?: string | null; avatarColor: string; friendId: string | null } | null>(null);
+  const [notification, setNotification] = useState<{ id: string; kind: "dm" | "schedule"; account: string; text: string; profileImage?: string | null; avatarColor: string; friendId: string | null } | null>(null);
   const previousMessageIds = useRef<Set<string> | null>(null);
   const previousUserId = useRef<string | null>(null);
+  const remindedScheduleIds = useRef(new Set<string>());
   const notificationTranslateY = useRef(new Animated.Value(-140)).current;
   const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationPanResponder = useRef(PanResponder.create({
@@ -83,6 +90,23 @@ export default function AppNavigator() {
     ? Object.entries(directMessages).reduce((total, [threadId, messages]) => total + getUnreadDirectMessageCount(messages, currentUserId, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId))), 0)
     : 0;
 
+  const presentNotification = (nextNotification: NonNullable<typeof notification>) => {
+    setNotification(nextNotification);
+    notificationTranslateY.stopAnimation();
+    notificationTranslateY.setValue(-140);
+    Animated.timing(notificationTranslateY, { toValue: 0, duration: 360, useNativeDriver: true }).start();
+    if (notificationTimer.current) {
+      clearTimeout(notificationTimer.current);
+    }
+    notificationTimer.current = setTimeout(() => {
+      Animated.timing(notificationTranslateY, { toValue: -140, duration: 300, useNativeDriver: true }).start(({ finished }) => {
+        if (finished) {
+          setNotification(null);
+        }
+      });
+    }, 3600);
+  };
+
   useEffect(() => {
     if (previousUserId.current !== currentUserId) {
       previousUserId.current = currentUserId;
@@ -106,34 +130,61 @@ export default function AppNavigator() {
     }
 
     const sender = users.find((user) => user.id === latest.message.senderId);
-    setNotification({
+    presentNotification({
       id: latest.message.id,
+      kind: "dm",
       account: sender?.name ?? "Neue Nachricht",
       text: latest.message.text.length > 84 ? `${latest.message.text.slice(0, 84).trim()}...` : latest.message.text,
       profileImage: sender?.profileImage,
       avatarColor: sender?.avatarColor ?? colors.accent,
       friendId: latest.threadId.startsWith("support:") ? "support-account" : sender?.id ?? null,
     });
-    notificationTranslateY.stopAnimation();
-    notificationTranslateY.setValue(-140);
-    Animated.timing(notificationTranslateY, { toValue: 0, duration: 360, useNativeDriver: true }).start();
-    if (notificationTimer.current) {
-      clearTimeout(notificationTimer.current);
-    }
-    notificationTimer.current = setTimeout(() => {
-      Animated.timing(notificationTranslateY, { toValue: -140, duration: 300, useNativeDriver: true }).start(({ finished }) => {
-        if (finished) {
-          setNotification(null);
-        }
-      });
-    }, 3600);
   }, [currentUser, currentUserId, directMessages, users]);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.scheduleRemindersEnabled === false) {
+      return;
+    }
+
+    const checkScheduleReminders = () => {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const today = scheduleDays[now.getDay()];
+      const upcomingClass = todaySchedule.find((item) => {
+        const startMinutes = getScheduleStart(item.time);
+        return item.day === today && startMinutes !== null && currentMinutes >= startMinutes - 5 && currentMinutes < startMinutes;
+      });
+
+      const reminderKey = upcomingClass ? `${now.toDateString()}-${upcomingClass.id}` : "";
+      if (!upcomingClass || remindedScheduleIds.current.has(reminderKey)) {
+        return;
+      }
+
+      remindedScheduleIds.current.add(reminderKey);
+      const startTime = upcomingClass.time.match(/^\d{1,2}:\d{2}/)?.[0] ?? upcomingClass.time;
+      presentNotification({
+        id: `schedule-${upcomingClass.id}-${now.toDateString()}`,
+        kind: "schedule",
+        account: upcomingClass.course,
+        text: `${upcomingClass.room} · ${startTime}`,
+        avatarColor: colors.accent,
+        friendId: null,
+      });
+    };
+
+    checkScheduleReminders();
+    const interval = setInterval(checkScheduleReminders, 15000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id, currentUser?.scheduleRemindersEnabled, todaySchedule]);
 
   const openNotification = () => {
     if (!notification?.friendId) {
       return;
     }
 
+    if (notification.kind !== "dm" || !notification.friendId) {
+      return;
+    }
     const friendId = notification.friendId;
     Animated.timing(notificationTranslateY, { toValue: -140, duration: 240, useNativeDriver: true }).start(() => {
       setNotification(null);
@@ -198,7 +249,11 @@ export default function AppNavigator() {
       {notification ? (
         <Animated.View {...notificationPanResponder.panHandlers} style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
           <TouchableOpacity style={styles.notificationTouchable} onPress={openNotification} activeOpacity={0.85}>
-            {notification.profileImage ? (
+            {notification.kind === "schedule" ? (
+              <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>
+                <Ionicons name="calendar-outline" size={21} color={colors.white} />
+              </View>
+            ) : notification.profileImage ? (
               <Image source={{ uri: notification.profileImage }} style={styles.notificationAvatar} />
             ) : (
               <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>

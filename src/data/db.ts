@@ -24,6 +24,7 @@ export type CampusUser = {
   showOnlineStatus?: boolean;
   notificationsMuted?: boolean;
   mutedChatThreadIds?: string[];
+  scheduleRemindersEnabled?: boolean;
 };
 
 export type CampusDB = {

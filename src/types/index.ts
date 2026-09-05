@@ -101,4 +101,5 @@ export type CampusUser = {
   showOnlineStatus?: boolean;
   notificationsMuted?: boolean;
   mutedChatThreadIds?: string[];
+  scheduleRemindersEnabled?: boolean;
 };
