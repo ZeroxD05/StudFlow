@@ -350,6 +350,33 @@ export const getCurrentUser = () =>
 
 export async function loginUser(email: string, password: string) {
   const normalized = email.trim().toLowerCase();
+  try {
+    const authResponse = await fetch(`${SERVER_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: normalized, password }),
+    });
+    if (authResponse.ok) {
+      const authResult = await authResponse.json() as { user?: CampusUser; token?: string };
+      if (authResult.user && authResult.token) {
+        localAuthToken = authResult.token;
+        localSessionUserId = authResult.user.id;
+        await AsyncStorage.setItem(AUTH_TOKEN_KEY, localAuthToken);
+        await AsyncStorage.setItem(SESSION_KEY, localSessionUserId);
+        dbState = {
+          ...dbState,
+          users: [...dbState.users.filter((candidate) => candidate.id !== authResult.user?.id), authResult.user],
+          currentUserId: localSessionUserId,
+        };
+        listeners.forEach((listener) => listener());
+        void hydrateFromServer();
+        return authResult.user;
+      }
+    }
+  } catch {
+    // Use the local fallback below when the server is temporarily unavailable.
+  }
+
   const user = dbState.users.find((candidate) =>
     candidate.email.toLowerCase() === normalized ||
     candidate.username.toLowerCase() === normalized ||
@@ -733,6 +760,12 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     },
   }));
 
+  void fetch(`${SERVER_URL}/api/direct-messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ threadId: getDirectMessageThreadId(currentUser.id, friendId), text: trimmed }),
+  }).catch(() => undefined);
+
   return message;
 }
 
@@ -765,6 +798,12 @@ export function sendSupportMessage(text: string) {
       ],
     },
   }));
+
+  void fetch(`${SERVER_URL}/api/direct-messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ threadId: `support:${currentUser.id}`, text: trimmed }),
+  }).catch(() => undefined);
 
   return message;
 }
