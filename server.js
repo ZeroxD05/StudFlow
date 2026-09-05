@@ -227,6 +227,19 @@ app.get("/api/users", (_, res) => {
   res.json(db.users);
 });
 
+app.patch("/api/schedules", (req, res) => {
+  const userId = String(req.body?.userId || "");
+  const schedule = Array.isArray(req.body?.schedule) ? req.body.schedule : null;
+  if (!userId || !db.users.some((user) => user.id === userId) || !schedule) {
+    return res.status(400).json({ error: "Nutzer oder Stundenplan fehlt." });
+  }
+
+  db.scheduleByUserId = { ...(db.scheduleByUserId || {}), [userId]: schedule };
+  db = writeDb(db);
+  emitDb();
+  res.json({ ok: true });
+});
+
 app.patch("/api/db", (req, res) => {
   const users = Array.isArray(req.body?.users) ? req.body.users : db.users;
   const seenUsernames = new Set();

@@ -304,6 +304,25 @@ export function updateDb(mutator: (draft: CampusDB) => CampusDB, syncServer = tr
   listeners.forEach((listener) => listener());
 }
 
+export function saveCurrentUserSchedule(schedule: ScheduleItem[]) {
+  const currentUserId = getCurrentUser()?.id ?? localSessionUserId;
+  if (!currentUserId) {
+    return;
+  }
+
+  updateDb((draft) => ({
+    ...draft,
+    todaySchedule: schedule,
+    scheduleByUserId: { ...draft.scheduleByUserId, [currentUserId]: schedule },
+  }), false);
+
+  fetch(`${SERVER_URL}/api/schedules`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: currentUserId, schedule }),
+  }).catch(() => undefined);
+}
+
 export function useAppDb() {
   const [value, setValue] = useState<CampusDB>(withUserSchedule(dbState, dbState.currentUserId ?? localSessionUserId));
 

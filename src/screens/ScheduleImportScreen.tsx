@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { updateDb, useAppDb } from "@/data/db";
+import { saveCurrentUserSchedule, useAppDb } from "@/data/db";
 import { ScheduleItem } from "@/types";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 
@@ -115,14 +115,7 @@ export default function ScheduleImportScreen() {
           }))
       );
 
-      updateDb((draft) => ({
-        ...draft,
-        todaySchedule: parsed,
-        scheduleByUserId: {
-          ...draft.scheduleByUserId,
-          [db.currentUserId ?? "guest"]: parsed,
-        },
-      }));
+      saveCurrentUserSchedule(parsed);
       setIsSavingSchedule(false);
       Alert.alert("Stundenplan gespeichert", "Die Einträge wurden für die jeweiligen Tage gespeichert.");
     }, 600);

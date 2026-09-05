@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "@/components/Card";
 import QuickLinkTile from "@/components/QuickLinkTile";
 import SectionHeader from "@/components/SectionHeader";
-import { updateDb, useAppDb } from "@/data/db";
+import { saveCurrentUserSchedule, updateDb, useAppDb } from "@/data/db";
 import { GradeEntry } from "@/types";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 
@@ -85,14 +85,7 @@ export default function DashboardScreen({ navigation }: any) {
   });
   const todaysSchedule = todaySchedule.filter((item) => item.day === todayName);
   const toggleScheduleItemCompleted = (itemId: string) => {
-    updateDb((draft) => ({
-      ...draft,
-      todaySchedule: draft.todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
-      scheduleByUserId: {
-        ...draft.scheduleByUserId,
-        [currentUserId ?? "guest"]: draft.todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
-      },
-    }));
+    saveCurrentUserSchedule(todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item));
   };
   const selectedQuickLink = activeQuickLink ? quickLinkDetails[activeQuickLink] : null;
   const campusUrl = user?.campus
