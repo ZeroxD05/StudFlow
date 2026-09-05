@@ -197,7 +197,7 @@ export default function ProfileScreen() {
             )}
             <View style={styles.identityBlock}>
               <Text style={styles.profileName}>{currentUser.name}</Text>
-              <Text style={styles.profileHandle}>{currentUser.username}@study2buddy.de</Text>
+              <Text style={styles.profileHandle}>{currentUser.linkedEmail ?? `${currentUser.username}@study2buddy.de`}</Text>
               <View style={styles.accountBadge}>
                 <View style={[styles.accountBadgeDot, currentUser.showOnlineStatus === false && styles.accountBadgeDotHidden]} />
                 <Text style={styles.accountBadgeText}>{currentUser.showOnlineStatus === false ? "Unsichtbares Konto" : "Aktives Konto"}</Text>
