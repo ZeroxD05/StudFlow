@@ -51,7 +51,7 @@ export default function MatchingScreen() {
     }
 
     const keyboardSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
+      requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: false }));
     });
 
     return () => keyboardSubscription.remove();
