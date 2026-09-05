@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { updateDb, useAppDb } from "@/data/db";
 import { ScheduleItem } from "@/types";
@@ -127,6 +128,10 @@ export default function ScheduleImportScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={typography.h1}>Stundenplan</Text>
         <Text style={[typography.body, { marginTop: 4 }]}>Mehrere Fächer pro Tag, einfach speichern und später bearbeiten.</Text>
+        <View style={styles.saveHint}>
+          <Ionicons name="information-circle-outline" size={17} color={colors.primary} />
+          <Text style={styles.saveHintText}>Speichere deine Änderungen immer, damit sie auf der Startseite und in den Erinnerungen korrekt erscheinen.</Text>
+        </View>
 
         <ScrollView
           horizontal
@@ -238,6 +243,23 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 900,
     alignSelf: "center",
+  },
+  saveHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    marginTop: spacing.md,
+  },
+  saveHintText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
   tabsRow: {
     flexDirection: "row",
