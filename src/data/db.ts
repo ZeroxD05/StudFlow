@@ -653,34 +653,6 @@ export function updateCurrentUser(changes: Partial<CampusUser>) {
   return nextUser;
 }
 
-export function toggleLike(postId: string) {
-  const currentUser = getCurrentUser();
-  if (!currentUser) {
-    return;
-  }
-
-  updateDb((draft) => ({
-    ...draft,
-    communityPosts: draft.communityPosts.map((post) => {
-      if (post.id !== postId) {
-        return post;
-      }
-
-      const likedByUserIds = post.likedByUserIds ?? [];
-      const liked = likedByUserIds.includes(currentUser.id);
-      const nextLikedByUserIds = liked
-        ? likedByUserIds.filter((userId) => userId !== currentUser.id)
-        : [...likedByUserIds, currentUser.id];
-      return {
-        ...post,
-        likedByUserIds: nextLikedByUserIds,
-        likedByCurrentUser: !liked,
-        likes: nextLikedByUserIds.length,
-      };
-    }),
-  }));
-}
-
 export function addCommentToPost(postId: string, text: string) {
   const currentUser = getCurrentUser();
   const trimmed = text.trim();
@@ -728,10 +700,8 @@ export function addCommunityPost(content: string) {
     avatarColor: currentUser.avatarColor,
     content: content.trim(),
     course: currentUser.major,
-    likes: 0,
     comments: 0,
     timeAgo: "Jetzt",
-    likedByCurrentUser: false,
     threadName: currentUser.name,
     unread: 0,
     profileImage: currentUser.profileImage ?? null,

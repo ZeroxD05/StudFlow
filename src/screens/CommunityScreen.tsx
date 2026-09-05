@@ -3,11 +3,11 @@ import { Alert, FlatList, Image, Platform, StyleSheet, Text, TextInput, Touchabl
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "@/components/Card";
-import { addCommentToPost, addCommunityPost, addFriend, deleteCommunityPost, toggleLike, useAppDb } from "@/data/db";
+import { addCommentToPost, addCommunityPost, addFriend, deleteCommunityPost, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { CommunityPost } from "@/types";
 
-function PostCard({ post, isLiked, onLike, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment }: { post: CommunityPost; isLiked: boolean; onLike: () => void; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void }) {
+function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment }: { post: CommunityPost; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void }) {
   const initial = post.author.charAt(0).toUpperCase();
   return (
     <Card style={styles.postCard}>
@@ -39,10 +39,6 @@ function PostCard({ post, isLiked, onLike, canAddFriend, onAddFriend, canDelete,
       <Text style={[typography.body, styles.postContent]}>{post.content}</Text>
 
       <View style={styles.postFooter}>
-        <TouchableOpacity style={styles.footerAction} onPress={onLike}>
-          <Ionicons name={isLiked ? "heart" : "heart-outline"} size={16} color={isLiked ? colors.accent : colors.textMuted} />
-          <Text style={styles.footerText}>{post.likes}</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.footerAction} onPress={onToggleThread}>
           <Ionicons name="chatbubble-outline" size={16} color={colors.textMuted} />
           <Text style={styles.footerText}>{post.comments}</Text>
@@ -158,11 +154,9 @@ export default function CommunityScreen() {
           return (
             <PostCard
               post={item}
-              isLiked={Boolean(currentUserId && item.likedByUserIds?.includes(currentUserId))}
               canAddFriend={canAddFriend}
               canDelete={item.authorId === currentUser?.id || (!item.authorId && item.author === currentUser?.name)}
               onDelete={() => confirmDeletePost(item.id)}
-              onLike={() => toggleLike(item.id)}
               onAddFriend={() => { if (authorId) addFriend(authorId); }}
               isThreadOpen={openThreadId === item.id}
               commentDraft={commentDrafts[item.id] ?? ""}

@@ -99,7 +99,6 @@ export const communityPosts: CommunityPost[] = [
     content:
       "Lerngruppe für die Statistik-Klausur nächste Woche? Wir treffen uns Dienstag 17 Uhr in der Bib, 3. Stock.",
     course: "Statistik I",
-    likes: 14,
     comments: 6,
     timeAgo: "2 Std.",
   },
@@ -108,7 +107,6 @@ export const communityPosts: CommunityPost[] = [
     author: "Aylin T.",
     avatarColor: "#3ECF8E",
     content: "Kleiner Reminder: Rückmeldefrist für nächstes Semester endet in 3 Tagen!",
-    likes: 41,
     comments: 2,
     timeAgo: "1 Tag",
   },

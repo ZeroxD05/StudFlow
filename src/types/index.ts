@@ -70,12 +70,9 @@ export type CommunityPost = {
   avatarColor: string;
   content: string;
   course?: string;
-  likes: number;
   comments: number;
   commentsList?: CommunityComment[];
   timeAgo: string;
-  likedByCurrentUser?: boolean;
-  likedByUserIds?: string[];
   threadName?: string;
   unread?: number;
   profileImage?: string | null;

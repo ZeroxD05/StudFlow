@@ -271,11 +271,9 @@ app.post("/api/posts", (req, res) => {
     avatarColor: user.avatarColor,
     content: String(content).trim(),
     course: user.major,
-    likes: 0,
     comments: 0,
     commentsList: [],
     timeAgo: "Jetzt",
-    likedByCurrentUser: false,
     threadName: user.name,
     unread: 0,
     profileImage: user.profileImage || null,
@@ -304,22 +302,6 @@ app.delete("/api/posts/:postId", (req, res) => {
   db = writeDb(db);
   emitDb();
   res.json({ ok: true });
-});
-
-app.post("/api/posts/:postId/like", (req, res) => {
-  const { userId } = req.body || {};
-  const post = db.communityPosts.find((entry) => entry.id === req.params.postId);
-  if (!post || !userId) {
-    return res.status(404).json({ error: "Post oder Nutzer nicht gefunden." });
-  }
-
-  const liked = !!post.likedByCurrentUser;
-  post.likedByCurrentUser = !liked;
-  post.likes = liked ? Math.max(0, post.likes - 1) : post.likes + 1;
-
-  db = writeDb(db);
-  emitDb();
-  res.json(post);
 });
 
 app.post("/api/posts/:postId/comments", (req, res) => {
