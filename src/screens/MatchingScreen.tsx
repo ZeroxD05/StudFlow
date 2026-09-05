@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
+import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, toggleChatNotifications, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { DirectMessage } from "@/types";
 
@@ -57,7 +57,8 @@ export default function MatchingScreen() {
       : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
   const supportMessages = db.directMessages[`support:${currentUser?.id ?? ""}`] ?? [];
-  const supportUnreadCount = getUnreadDirectMessageCount(supportMessages, currentUser?.id ?? null);
+  const supportThreadId = `support:${currentUser?.id ?? ""}`;
+  const supportUnreadCount = getUnreadDirectMessageCount(supportMessages, currentUser?.id ?? null, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(supportThreadId)));
   const messagesScrollRef = useRef<ScrollView>(null);
   const activeThreadId = isSupportChat ? `support:${currentUser?.id ?? ""}` : currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
 
@@ -144,6 +145,14 @@ export default function MatchingScreen() {
     ]);
   };
 
+  const toggleSelectedChatMute = () => {
+    if (!activeThreadId) {
+      return;
+    }
+    toggleChatNotifications(activeThreadId);
+    setChatActionsVisible(false);
+  };
+
   if (selectedFriend) {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -164,11 +173,17 @@ export default function MatchingScreen() {
               <Text style={styles.chatName}>{selectedFriend.name}</Text>
               <Text style={styles.chatStatus}>{isSupportChat ? "StudFlow-Support" : selectedFriend.online ? "Online" : "Offline"}</Text>
             </View>
-            <TouchableOpacity onPress={() => setChatActionsVisible((visible) => !visible)} disabled={isSupportChat} hitSlop={8}>
-              <Ionicons name="ellipsis-vertical" size={20} color={isSupportChat ? colors.border : colors.textMuted} />
+            <TouchableOpacity onPress={() => setChatActionsVisible((visible) => !visible)} hitSlop={8}>
+              <Ionicons name="ellipsis-vertical" size={20} color={colors.textMuted} />
             </TouchableOpacity>
-            {chatActionsVisible && !isSupportChat ? (
+            {chatActionsVisible ? (
               <View style={styles.chatActionsMenu}>
+                <TouchableOpacity style={styles.chatActionItem} onPress={toggleSelectedChatMute}>
+                  <Ionicons name={currentUser?.mutedChatThreadIds?.includes(activeThreadId) ? "notifications-outline" : "notifications-off-outline"} size={17} color={colors.textPrimary} />
+                  <Text style={styles.chatActionText}>{currentUser?.mutedChatThreadIds?.includes(activeThreadId) ? "Chat laut stellen" : "Chat stummschalten"}</Text>
+                </TouchableOpacity>
+                {!isSupportChat ? (
+                  <>
                 <TouchableOpacity style={styles.chatActionItem} onPress={() => performFriendAction("remove")}>
                   <Ionicons name="person-remove-outline" size={17} color={colors.textPrimary} />
                   <Text style={styles.chatActionText}>Freund entfernen</Text>
@@ -177,6 +192,8 @@ export default function MatchingScreen() {
                   <Ionicons name="ban-outline" size={17} color="#C0392B" />
                   <Text style={[styles.chatActionText, styles.chatActionDanger]}>Blockieren</Text>
                 </TouchableOpacity>
+                  </>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -309,7 +326,8 @@ export default function MatchingScreen() {
         ) : friends.map((friend) => {
           const friendMessages = (currentUser ? db.directMessages[getDirectMessageThreadId(currentUser.id, friend.id)] : null) ?? db.directMessages[friend.id] ?? [];
           const lastMessage = friendMessages[friendMessages.length - 1];
-          const unreadCount = getUnreadDirectMessageCount(friendMessages, currentUser?.id ?? null);
+          const threadId = getDirectMessageThreadId(currentUser?.id ?? "", friend.id);
+          const unreadCount = getUnreadDirectMessageCount(friendMessages, currentUser?.id ?? null, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId)));
           return (
             <TouchableOpacity key={friend.id} style={styles.friendRow} onPress={() => setSelectedFriendId(friend.id)} activeOpacity={0.75}>
               {friend.profileImage ? (

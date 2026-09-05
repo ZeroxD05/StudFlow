@@ -22,6 +22,8 @@ export type CampusUser = {
   friendRequests?: string[];
   online?: boolean;
   showOnlineStatus?: boolean;
+  notificationsMuted?: boolean;
+  mutedChatThreadIds?: string[];
 };
 
 export type CampusDB = {
@@ -536,8 +538,8 @@ export function getDirectMessageThreadId(firstUserId: string, secondUserId: stri
   return `dm:${[firstUserId, secondUserId].sort().join(":")}`;
 }
 
-export function getUnreadDirectMessageCount(messages: DirectMessage[], currentUserId: string | null) {
-  if (!currentUserId) {
+export function getUnreadDirectMessageCount(messages: DirectMessage[], currentUserId: string | null, muted = false) {
+  if (!currentUserId || muted) {
     return 0;
   }
 
@@ -545,6 +547,21 @@ export function getUnreadDirectMessageCount(messages: DirectMessage[], currentUs
     const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
     return isIncoming && !message.readByUserIds?.includes(currentUserId);
   }).length;
+}
+
+export function toggleChatNotifications(threadId: string) {
+  const currentUser = getCurrentUser();
+  if (!currentUser || !threadId) {
+    return currentUser;
+  }
+
+  const mutedChatThreadIds = currentUser.mutedChatThreadIds ?? [];
+  const nextMutedChatThreadIds = mutedChatThreadIds.includes(threadId)
+    ? mutedChatThreadIds.filter((id) => id !== threadId)
+    : [...mutedChatThreadIds, threadId];
+
+  updateCurrentUser({ mutedChatThreadIds: nextMutedChatThreadIds });
+  return { ...currentUser, mutedChatThreadIds: nextMutedChatThreadIds };
 }
 
 export function markDirectMessagesAsRead(threadId: string) {

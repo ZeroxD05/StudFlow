@@ -98,4 +98,6 @@ export type CampusUser = {
   friendRequests?: string[];
   online?: boolean;
   showOnlineStatus?: boolean;
+  notificationsMuted?: boolean;
+  mutedChatThreadIds?: string[];
 };

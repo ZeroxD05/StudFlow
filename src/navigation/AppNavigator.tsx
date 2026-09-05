@@ -34,9 +34,10 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function AppNavigator() {
-  const { currentUserId, directMessages } = useAppDb();
+  const { currentUserId, directMessages, users } = useAppDb();
+  const currentUser = users.find((user) => user.id === currentUserId) ?? null;
   const unreadMessages = currentUserId
-    ? Object.values(directMessages).reduce((total, messages) => total + getUnreadDirectMessageCount(messages, currentUserId), 0)
+    ? Object.entries(directMessages).reduce((total, [threadId, messages]) => total + getUnreadDirectMessageCount(messages, currentUserId, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId))), 0)
     : 0;
 
   return (
