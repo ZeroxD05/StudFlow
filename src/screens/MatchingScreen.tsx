@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, toggleChatNotifications, useAppDb } from "@/data/db";
@@ -225,6 +225,11 @@ export default function MatchingScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.container}>
           <View style={styles.desktopShell}>
+          {chatActionsVisible ? (
+            <TouchableWithoutFeedback onPress={() => setChatActionsVisible(false)}>
+              <View style={styles.menuDismissOverlay} />
+            </TouchableWithoutFeedback>
+          ) : null}
           <View style={styles.chatTopBar}>
             <TouchableOpacity style={styles.backButton} onPress={() => setSelectedFriendId(null)} hitSlop={8}>
               <Ionicons name="arrow-back" size={24} color={colors.primary} />
@@ -481,6 +486,7 @@ const styles = StyleSheet.create({
   emptyFriendsTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800", marginTop: spacing.md },
   emptyFriendsText: { color: colors.textSecondary, textAlign: "center", lineHeight: 20, marginTop: spacing.sm },
   chatTopBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, zIndex: 20, elevation: 20 },
+  menuDismissOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 },
   chatActionsMenu: { position: "absolute", top: 58, right: spacing.md, zIndex: 30, minWidth: 190, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.xs, shadowColor: colors.primary, shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 30 },
   chatActionItem: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   chatActionText: { color: colors.textPrimary, fontWeight: "700", fontSize: 13 },
