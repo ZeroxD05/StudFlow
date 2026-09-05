@@ -3,6 +3,7 @@ services:
     name: studflow-api
     runtime: docker
     plan: free
+    region: frankfurt
     healthCheckPath: /health
     envVars:
       - key: PORT

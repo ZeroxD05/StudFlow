@@ -93,7 +93,7 @@ export default function ProfileScreen() {
               <Text style={styles.legalHeading}>Supabase-Konfiguration</Text>
               <Text style={styles.legalText}>Die App verwendet ein Supabase-Projekt als serverseitige Datenbank. Gespeichert wird der zentrale StudFlow-Zustand in der Tabelle „studflow_state“ als JSON-Daten. Der Supabase-Service-Key wird ausschließlich serverseitig verwendet und nicht an die App ausgeliefert. Row Level Security ist für die Tabelle aktiviert; direkter Zugriff für anonyme und authentifizierte Datenbanknutzer ist deaktiviert.</Text>
               <Text style={styles.legalHeading}>Hosting und Serverstandort</Text>
-              <Text style={styles.legalText}>Das Backend wird über Render bereitgestellt. Der konkrete Render-Standort und die Region des Supabase-Projekts sind in der App-Konfiguration nicht festgelegt und müssen in den jeweiligen Anbieter-Konten geprüft werden. Dein Wohnort in Hamburg bestimmt nicht automatisch den Serverstandort.</Text>
+              <Text style={styles.legalText}>Das Backend wird über Render bereitgestellt; der Render-Service ist im Projekt für die Region Frankfurt konfiguriert. Die Region des Supabase-Projekts muss im Supabase-Konto geprüft werden und wird nicht durch deinen Wohnort in Hamburg bestimmt.</Text>
               <Text style={styles.legalHeading}>Deine Rechte</Text>
               <Text style={styles.legalText}>Du kannst Auskunft, Berichtigung oder Löschung deiner Daten verlangen. Wende dich dafür an ata2005hh@gmail.com. Dein Konto kannst du außerdem direkt in der App löschen.</Text>
               <Text style={styles.legalHeading}>Stand</Text>
