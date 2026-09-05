@@ -344,6 +344,7 @@ export default function ProfileScreen() {
               <View key={tenant.id} style={styles.tenantRow}>
                 <View style={styles.tenantInfo}>
                   <Text style={styles.tenantName}>{tenant.name}</Text>
+                  <Text style={styles.tenantMeta}>{tenant.id}</Text>
                   <Text style={styles.tenantMeta}>{tenant.emailDomain ?? "Keine Domain"} · {tenant.adminEmail ?? "Kein Admin"}</Text>
                 </View>
                 <View style={styles.tenantActions}>

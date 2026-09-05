@@ -416,7 +416,15 @@ app.delete("/api/admin/news/:newsId", requireTenantAdmin, (req, res) => {
 app.post("/api/admin/users", requireAdmin, async (req, res) => {
   const { tenantId, name, username, linkedEmail, password } = req.body || {};
   const tenant = (db.tenants || []).find((entry) => entry.id === tenantId);
-  if (!tenant || !name || !username || !linkedEmail || !password) return res.status(400).json({ error: "Adminangaben fehlen." });
+  const missing = [
+    !tenantId ? "Tenant-ID" : null,
+    !name ? "Name" : null,
+    !username ? "Benutzername" : null,
+    !linkedEmail ? "Admin-Mail" : null,
+    !password ? "Passwort" : null,
+  ].filter(Boolean);
+  if (missing.length) return res.status(400).json({ error: `Fehlt: ${missing.join(", ")}.` });
+  if (!tenant) return res.status(404).json({ error: `Tenant nicht gefunden: ${tenantId}` });
   if (db.users.some((user) => user.username === username || user.linkedEmail === linkedEmail)) return res.status(409).json({ error: "Benutzername oder Uni-Mail existiert bereits." });
   const user = { id: createId("user"), tenantId, role: "admin", name: String(name).trim(), username: String(username).trim().toLowerCase(), email: `${String(username).trim().toLowerCase()}@study2buddy.de`, internalEmail: `${String(username).trim().toLowerCase()}@study2buddy.de`, linkedEmail: String(linkedEmail).trim().toLowerCase(), password: await bcrypt.hash(String(password), 12), major: "", semester: 1, bio: "", avatarColor: "#1E4FD8", campus: tenant.name, friends: [], showOnlineStatus: true };
   db.users.push(user);
