@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { PanResponder, StyleSheet, Text, View } from "react-native";
+import { createNavigationContainerRef, NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import DashboardScreen from "@/screens/DashboardScreen";
@@ -13,6 +13,8 @@ import { getUnreadDirectMessageCount, useAppDb } from "@/data/db";
 import { colors } from "@/theme/theme";
 
 const Tab = createBottomTabNavigator();
+const navigationRef = createNavigationContainerRef();
+const tabRoutes = ["Dashboard", "Match", "Stundenplan", "Community", "Profil"];
 
 const navTheme = {
   ...DefaultTheme,
@@ -40,6 +42,26 @@ export default function AppNavigator() {
   const [notification, setNotification] = useState<{ id: string; account: string; text: string } | null>(null);
   const previousMessageIds = useRef<Set<string> | null>(null);
   const previousUserId = useRef<string | null>(null);
+  const swipeResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onPanResponderRelease: (_, gesture) => {
+      if (!navigationRef.isReady() || Math.abs(gesture.dx) < 50) {
+        return;
+      }
+
+      const currentRoute = navigationRef.getCurrentRoute()?.name;
+      const currentIndex = currentRoute ? tabRoutes.indexOf(currentRoute) : -1;
+      if (currentIndex < 0) {
+        return;
+      }
+
+      const nextIndex = gesture.dx < 0 ? Math.min(currentIndex + 1, tabRoutes.length - 1) : Math.max(currentIndex - 1, 0);
+      if (nextIndex !== currentIndex) {
+        (navigationRef as any).navigate(tabRoutes[nextIndex]);
+      }
+    },
+  })).current;
   const unreadMessages = currentUserId
     ? Object.entries(directMessages).reduce((total, [threadId, messages]) => total + getUnreadDirectMessageCount(messages, currentUserId, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId))), 0)
     : 0;
@@ -78,7 +100,7 @@ export default function AppNavigator() {
 
   return (
     <View style={styles.appRoot}>
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer ref={navigationRef} theme={navTheme}>
       <Tab.Navigator
         initialRouteName="Dashboard"
         screenOptions={({ route }) => ({
