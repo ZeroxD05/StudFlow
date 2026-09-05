@@ -23,6 +23,8 @@ export default function ProfileScreen() {
   const [newsBody, setNewsBody] = useState("");
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
+  const [adminFeedback, setAdminFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const isCentralAdmin = currentUser?.username === "ata";
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
@@ -396,19 +398,24 @@ export default function ProfileScreen() {
             ))}
             <TouchableOpacity style={styles.primaryButton} onPress={async () => {
               if (!adminForm.tenantId.trim() || !adminForm.name.trim() || !adminForm.username.trim() || !adminForm.linkedEmail.trim() || !adminForm.password.trim()) {
-                Alert.alert("Fehlende Angaben", "Bitte fülle Tenant-ID, Name, Benutzername, Admin-Mail und Passwort aus.");
+                setAdminFeedback({ type: "error", text: "Bitte fülle Tenant-ID, Name, Benutzername, Admin-Mail und Passwort aus." });
                 return;
               }
+              setIsCreatingAdmin(true);
+              setAdminFeedback(null);
               try {
                 await createTenantAdmin(adminForm);
                 setAdminForm({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
-                Alert.alert("Uni-Admin erstellt", "Der Uni-Admin wurde erfolgreich angelegt und kann sich jetzt anmelden.");
+                setAdminFeedback({ type: "success", text: "Uni-Admin erfolgreich erstellt. Der Account kann sich jetzt anmelden." });
               } catch (error: any) {
-                Alert.alert("Uni-Admin konnte nicht erstellt werden", error?.message ?? "Bitte prüfe die Angaben und versuche es erneut.");
+                setAdminFeedback({ type: "error", text: error?.message ?? "Bitte prüfe die Angaben und versuche es erneut." });
+              } finally {
+                setIsCreatingAdmin(false);
               }
-            }}>
-              <Text style={styles.primaryButtonText}>Uni-Admin erstellen</Text>
+            }} disabled={isCreatingAdmin}>
+              <Text style={styles.primaryButtonText}>{isCreatingAdmin ? "Wird erstellt ..." : "Uni-Admin erstellen"}</Text>
             </TouchableOpacity>
+            {adminFeedback ? <Text style={[styles.adminFeedback, adminFeedback.type === "error" ? styles.adminFeedbackError : styles.adminFeedbackSuccess]}>{adminFeedback.text}</Text> : null}
           </View>
         ) : null}
         <View style={styles.legalLinks}>
@@ -717,6 +724,9 @@ const styles = StyleSheet.create({
   tenantEditRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
   smallSaveButton: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 10 },
   smallSaveText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  adminFeedback: { fontSize: 12, lineHeight: 17, marginTop: spacing.sm },
+  adminFeedbackError: { color: "#C0392B" },
+  adminFeedbackSuccess: { color: colors.success },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
   adminFieldSpacing: { marginTop: spacing.sm },
