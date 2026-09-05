@@ -28,7 +28,7 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
   const translateX = useRef(new Animated.Value(0)).current;
   const currentOffset = useRef(0);
   const gestureStartOffset = useRef(0);
-  const actionWidth = allowContactActions ? 230 : 76;
+  const actionWidth = allowContactActions ? 238 : 84;
   const [isOpen, setIsOpen] = useState(false);
   const close = () => {
     setIsOpen(false);
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   rejectButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.backgroundAlt, alignItems: "center", justifyContent: "center", marginLeft: spacing.xs },
   friendList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   swipeRowShell: { position: "relative", overflow: "hidden" },
-  swipeActions: { position: "absolute", left: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "stretch" },
+  swipeActions: { position: "absolute", left: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "stretch", paddingRight: spacing.sm },
   swipeActionMute: { width: 76, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionRemove: { width: 76, backgroundColor: "#B7791F", alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionBlock: { width: 78, backgroundColor: "#C0392B", alignItems: "center", justifyContent: "center", gap: 3 },
