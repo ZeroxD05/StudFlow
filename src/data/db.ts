@@ -848,7 +848,12 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     if (!response.ok) {
       throw new Error(`DM konnte nicht synchronisiert werden (${response.status}).`);
     }
-    await hydrateFromServer();
+    const serverMessage = await response.json() as DirectMessage;
+    updateDb((draft) => {
+      const threadId = getDirectMessageThreadId(currentUser.id, friendId);
+      const thread = draft.directMessages[threadId] ?? [];
+      return thread.some((entry) => entry.id === serverMessage.id) ? draft : { ...draft, directMessages: { ...draft.directMessages, [threadId]: [...thread, serverMessage] } };
+    }, false);
   }).catch((error) => {
     console.warn(error);
   });
@@ -883,7 +888,12 @@ export function sendSupportMessage(text: string) {
     if (!response.ok) {
       throw new Error(`Support-DM konnte nicht synchronisiert werden (${response.status}).`);
     }
-    await hydrateFromServer();
+    const serverMessage = await response.json() as DirectMessage;
+    updateDb((draft) => {
+      const threadId = `support:${currentUser.id}`;
+      const thread = draft.directMessages[threadId] ?? [];
+      return thread.some((entry) => entry.id === serverMessage.id) ? draft : { ...draft, directMessages: { ...draft.directMessages, [threadId]: [...thread, serverMessage] } };
+    }, false);
   }).catch((error) => {
     console.warn(error);
   });
