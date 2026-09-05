@@ -15,6 +15,7 @@ export default function ProfileScreen() {
   const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | "terms" | null>(null);
   const [tenantName, setTenantName] = useState("");
   const [tenantDomain, setTenantDomain] = useState("");
+  const [tenantAdminEmail, setTenantAdminEmail] = useState("");
   const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([]);
   const [newsTitle, setNewsTitle] = useState("");
   const [newsBody, setNewsBody] = useState("");
@@ -328,7 +329,8 @@ export default function ProfileScreen() {
             <View style={styles.adminCreateRow}>
               <TextInput value={tenantName} onChangeText={setTenantName} placeholder="Name der Hochschule" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
               <TextInput value={tenantDomain} onChangeText={setTenantDomain} placeholder="uni.de" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" />
-              <TouchableOpacity style={styles.adminAddButton} onPress={async () => { if (!tenantName.trim() || !tenantDomain.trim()) return; const tenant = await createTenant(tenantName, tenantDomain); setTenants((current) => [...current, tenant]); setTenantName(""); setTenantDomain(""); }}>
+              <TextInput value={tenantAdminEmail} onChangeText={setTenantAdminEmail} placeholder="Admin-Mail" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" keyboardType="email-address" />
+              <TouchableOpacity style={styles.adminAddButton} onPress={async () => { if (!tenantName.trim() || !tenantDomain.trim() || !tenantAdminEmail.trim()) return; const tenant = await createTenant(tenantName, tenantDomain, tenantAdminEmail); setTenants((current) => [...current, tenant]); setTenantName(""); setTenantDomain(""); setTenantAdminEmail(""); }}>
                 <Ionicons name="add" size={20} color={colors.white} />
               </TouchableOpacity>
             </View>

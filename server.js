@@ -70,6 +70,14 @@ const requireAdmin = (req, res, next) => {
     next();
   });
 };
+const requireTenantAdmin = (req, res, next) => {
+  requireAuth(req, res, () => {
+    const tenant = (db.tenants || []).find((entry) => entry.id === req.authUser.tenantId);
+    const authorized = req.authUser.role === "admin" && (!tenant?.adminEmail || tenant.adminEmail === req.authUser.linkedEmail);
+    if (!authorized) return res.status(403).json({ error: "Keine News-Berechtigung für diese Hochschule." });
+    next();
+  });
+};
 
 const defaultDb = {
   currentUserId: null,
@@ -291,6 +299,7 @@ app.post("/api/auth/register", async (req, res) => {
     internalEmail: candidateEmail,
     linkedEmail: universityEmail,
     tenantId: tenant.id,
+    role: tenant.adminEmail === universityEmail ? "admin" : "student",
     password: await bcrypt.hash(String(password), 12),
     major: major || "Informatik",
     semester: Number(semester || 1),
@@ -342,17 +351,18 @@ app.get("/api/admin/tenants", requireAdmin, (_, res) => {
 app.post("/api/admin/tenants", requireAdmin, (req, res) => {
   const name = String(req.body?.name || "").trim();
   const emailDomain = String(req.body?.emailDomain || "").trim().toLowerCase().replace(/^@/, "");
+  const adminEmail = String(req.body?.adminEmail || "").trim().toLowerCase();
   const id = normalizeTenantId(name);
-  if (!name || !/^[^@\s]+\.[^@\s]+$/.test(emailDomain) || id === "study2buddy-demo") return res.status(400).json({ error: "Bitte Hochschulname und gültige Uni-Mail-Domain angeben." });
+  if (!name || !/^[^@\s]+\.[^@\s]+$/.test(emailDomain) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adminEmail) || id === "study2buddy-demo") return res.status(400).json({ error: "Bitte Hochschulname, Uni-Mail-Domain und Admin-Mail angeben." });
   if ((db.tenants || []).some((tenant) => tenant.emailDomain === emailDomain)) return res.status(409).json({ error: "Diese Uni-Mail-Domain existiert bereits." });
   if ((db.tenants || []).some((tenant) => tenant.id === id)) return res.status(409).json({ error: "Diese Hochschule existiert bereits." });
-  const tenant = { id, name, emailDomain };
+  const tenant = { id, name, emailDomain, adminEmail };
   db.tenants = [...(db.tenants || []), tenant];
   db = writeDb(db);
   res.status(201).json(tenant);
 });
 
-app.post("/api/admin/news", requireAdmin, (req, res) => {
+app.post("/api/admin/news", requireTenantAdmin, (req, res) => {
   const title = String(req.body?.title || "").trim();
   const body = String(req.body?.body || "").trim();
   if (!title || !body) return res.status(400).json({ error: "Titel und Inhalt fehlen." });

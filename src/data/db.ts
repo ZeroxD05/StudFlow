@@ -366,11 +366,11 @@ export async function listTenants() {
   return await response.json() as Tenant[];
 }
 
-export async function createTenant(name: string, emailDomain: string) {
+export async function createTenant(name: string, emailDomain: string, adminEmail: string) {
   const response = await fetch(`${SERVER_URL}/api/admin/tenants`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ name, emailDomain }),
+    body: JSON.stringify({ name, emailDomain, adminEmail }),
   });
   if (!response.ok) throw new Error("Hochschule konnte nicht angelegt werden.");
   return await response.json() as Tenant;
