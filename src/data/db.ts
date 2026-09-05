@@ -32,6 +32,7 @@ export type CampusDB = {
   users: CampusUser[];
   quickLinks: QuickLink[];
   todaySchedule: ScheduleItem[];
+  scheduleByUserId: Record<string, ScheduleItem[]>;
   scheduleImage?: string | null;
   buddyProfiles: BuddyProfile[];
   jobListings: JobListing[];
@@ -88,6 +89,7 @@ export const createDefaultDB = (): CampusDB => ({
   users: [defaultUser],
   quickLinks: defaultQuickLinks,
   todaySchedule: defaultSchedule,
+  scheduleByUserId: {},
   scheduleImage: null,
   buddyProfiles: defaultBuddyProfiles,
   jobListings: defaultJobListings,
@@ -101,6 +103,19 @@ let localSessionUserId: string | null = null;
 const listeners = new Set<() => void>();
 let serverSocket: Socket | null = null;
 
+function withUserSchedule(state: CampusDB, userId: string | null): CampusDB {
+  const scheduleByUserId = state.scheduleByUserId ?? {};
+  if (userId && !scheduleByUserId[userId] && state.todaySchedule.length > 0 && Object.keys(scheduleByUserId).length === 0) {
+    scheduleByUserId[userId] = state.todaySchedule;
+  }
+
+  return {
+    ...state,
+    scheduleByUserId,
+    todaySchedule: userId ? scheduleByUserId[userId] ?? [] : [],
+  };
+}
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const hashPassword = (password: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
 
@@ -113,7 +128,7 @@ function ensureSocket() {
     });
 
     serverSocket.on("db:update", (nextState: CampusDB) => {
-      dbState = { ...nextState, currentUserId: localSessionUserId };
+      dbState = withUserSchedule({ ...nextState, currentUserId: localSessionUserId }, localSessionUserId);
       listeners.forEach((listener) => listener());
     });
 
@@ -137,7 +152,7 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
     }
 
     const parsed = (await response.json()) as CampusDB;
-    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId };
+    dbState = withUserSchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId);
     listeners.forEach((listener) => listener());
     ensureSocket();
     return dbState;
@@ -158,13 +173,13 @@ export async function hydrateDb(): Promise<CampusDB> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      dbState = { ...createDefaultDB(), currentUserId: localSessionUserId };
+      dbState = withUserSchedule({ ...createDefaultDB(), currentUserId: localSessionUserId }, localSessionUserId);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
       return dbState;
     }
 
     const parsed = JSON.parse(raw) as CampusDB;
-    dbState = { ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId };
+    dbState = withUserSchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId);
     listeners.forEach((listener) => listener());
     return dbState;
   } catch (error) {
@@ -257,7 +272,7 @@ export const getDbSnapshot = () => clone(dbState);
 
 export function updateDb(mutator: (draft: CampusDB) => CampusDB, syncServer = true) {
   const nextState = mutator(clone(dbState));
-  dbState = nextState;
+  dbState = withUserSchedule(nextState, nextState.currentUserId ?? localSessionUserId);
   if (syncServer) {
     serverSocket?.emit("presence:identify", dbState.currentUserId);
   }
@@ -277,10 +292,10 @@ export function updateDb(mutator: (draft: CampusDB) => CampusDB, syncServer = tr
 }
 
 export function useAppDb() {
-  const [value, setValue] = useState<CampusDB>(dbState);
+  const [value, setValue] = useState<CampusDB>(withUserSchedule(dbState, dbState.currentUserId ?? localSessionUserId));
 
   useEffect(() => {
-    const listener = () => setValue(clone(dbState));
+    const listener = () => setValue(clone(withUserSchedule(dbState, dbState.currentUserId ?? localSessionUserId)));
     listeners.add(listener);
     ensureSocket();
     return () => {

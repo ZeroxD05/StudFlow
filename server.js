@@ -39,6 +39,7 @@ const defaultDb = {
     { id: "grades", label: "Noten", icon: "stats-chart-outline", url: "https://www.google.com/search?q=Noten+Universit%C3%A4t" },
   ],
   todaySchedule: [],
+  scheduleByUserId: {},
   scheduleImage: null,
   buddyProfiles: [],
   jobListings: [],
@@ -63,7 +64,7 @@ function readDb() {
   try {
     const raw = fs.readFileSync(dbFile, "utf8");
     const parsed = JSON.parse(raw);
-    return { ...defaultDb, ...parsed, users: parsed.users ?? [], communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {} };
+    return { ...defaultDb, ...parsed, users: parsed.users ?? [], communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
   } catch (error) {
     fs.writeFileSync(dbFile, JSON.stringify(defaultDb, null, 2));
     return { ...defaultDb };

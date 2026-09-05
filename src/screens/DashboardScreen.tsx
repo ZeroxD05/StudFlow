@@ -88,6 +88,10 @@ export default function DashboardScreen({ navigation }: any) {
     updateDb((draft) => ({
       ...draft,
       todaySchedule: draft.todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
+      scheduleByUserId: {
+        ...draft.scheduleByUserId,
+        [currentUserId ?? "guest"]: draft.todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
+      },
     }));
   };
   const selectedQuickLink = activeQuickLink ? quickLinkDetails[activeQuickLink] : null;

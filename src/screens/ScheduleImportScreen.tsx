@@ -115,7 +115,14 @@ export default function ScheduleImportScreen() {
           }))
       );
 
-      updateDb((draft) => ({ ...draft, todaySchedule: parsed }));
+      updateDb((draft) => ({
+        ...draft,
+        todaySchedule: parsed,
+        scheduleByUserId: {
+          ...draft.scheduleByUserId,
+          [db.currentUserId ?? "guest"]: parsed,
+        },
+      }));
       setIsSavingSchedule(false);
       Alert.alert("Stundenplan gespeichert", "Die Einträge wurden für die jeweiligen Tage gespeichert.");
     }, 600);
