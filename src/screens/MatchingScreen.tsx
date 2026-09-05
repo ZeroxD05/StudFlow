@@ -87,7 +87,7 @@ export default function MatchingScreen() {
   if (selectedFriend) {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={styles.container}>
           <View style={styles.desktopShell}>
           <View style={styles.chatTopBar}>
             <TouchableOpacity style={styles.backButton} onPress={() => setSelectedFriendId(null)} hitSlop={8}>
@@ -139,16 +139,18 @@ export default function MatchingScreen() {
             )}
           </ScrollView>
 
-          <View style={styles.composer}>
-            <View style={styles.messageInputShell}>
-              <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
-              <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
-                <Ionicons name="arrow-up" size={19} color={colors.white} />
-              </TouchableOpacity>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined}>
+            <View style={styles.composer}>
+              <View style={styles.messageInputShell}>
+                <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
+                <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
+                  <Ionicons name="send" size={16} color={colors.white} />
+                </TouchableOpacity>
+              </View>
             </View>
+          </KeyboardAvoidingView>
           </View>
-          </View>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
     );
   }
@@ -313,6 +315,6 @@ const styles = StyleSheet.create({
   composer: { padding: spacing.md, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border },
   messageInputShell: { position: "relative" },
   messageInput: { minHeight: 46, maxHeight: 110, backgroundColor: colors.background, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingRight: 56, paddingVertical: 12, fontSize: 15 },
-  sendButton: { position: "absolute", right: 7, bottom: 7, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  sendButton: { position: "absolute", right: 7, bottom: 7, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" },
   sendButtonDisabled: { opacity: 0.45 },
 });

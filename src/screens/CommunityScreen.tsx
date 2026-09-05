@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "@/components/Card";
@@ -57,18 +57,20 @@ function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThre
               </View>
             </View>
           ))}
-          <View style={styles.commentComposer}>
-            <TextInput
-              value={commentDraft}
-              onChangeText={onCommentDraftChange}
-              placeholder="Kommentar schreiben..."
-              placeholderTextColor={colors.textMuted}
-              style={styles.commentInput}
-            />
-            <TouchableOpacity style={styles.commentSendButton} onPress={onSubmitComment} disabled={!commentDraft.trim()}>
-              <Ionicons name="send" size={16} color={colors.white} />
-            </TouchableOpacity>
-          </View>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined}>
+            <View style={styles.commentComposer}>
+              <TextInput
+                value={commentDraft}
+                onChangeText={onCommentDraftChange}
+                placeholder="Kommentar schreiben..."
+                placeholderTextColor={colors.textMuted}
+                style={styles.commentInput}
+              />
+              <TouchableOpacity style={[styles.commentSendButton, !commentDraft.trim() && styles.commentSendButtonDisabled]} onPress={onSubmitComment} disabled={!commentDraft.trim()}>
+                <Ionicons name="send" size={16} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
       ) : null}
     </Card>
@@ -173,21 +175,23 @@ export default function CommunityScreen() {
         showsVerticalScrollIndicator={false}
       />
       {isPostComposerOpen ? (
-        <View style={styles.postComposerPanel}>
-          <View style={styles.inputShell}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder="Stell eine Frage an die Community..."
-              placeholderTextColor={colors.textMuted}
-              multiline
-              style={styles.input}
-            />
-            <TouchableOpacity style={styles.newPostButton} onPress={submitPost} hitSlop={6}>
-              <Ionicons name="arrow-up" size={20} color={colors.white} />
-            </TouchableOpacity>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined} style={styles.postComposerKeyboard}>
+          <View style={styles.postComposerPanel}>
+            <View style={styles.inputShell}>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Stell eine Frage an die Community..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                style={styles.input}
+              />
+              <TouchableOpacity style={[styles.newPostButton, !draft.trim() && styles.newPostButtonDisabled]} onPress={submitPost} hitSlop={6}>
+                <Ionicons name="send" size={16} color={colors.white} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       ) : null}
       <TouchableOpacity style={styles.fab} onPress={() => setIsPostComposerOpen((open) => !open)} activeOpacity={0.85}>
         <Ionicons name={isPostComposerOpen ? "close" : "add"} size={26} color={colors.white} />
@@ -476,10 +480,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   postComposerPanel: {
-    position: "absolute",
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: 76,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -490,6 +490,12 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
+  },
+  postComposerKeyboard: {
+    position: "absolute",
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 76,
   },
   inputShell: {
     flex: 1,
@@ -516,10 +522,13 @@ const styles = StyleSheet.create({
     top: 8,
     width: 32,
     height: 32,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.success,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+  },
+  newPostButtonDisabled: {
+    opacity: 0.45,
   },
   fab: {
     position: "absolute",
@@ -528,7 +537,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.success,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: colors.primary,
@@ -666,5 +675,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+  },
+  commentSendButtonDisabled: {
+    opacity: 0.45,
   },
 });
