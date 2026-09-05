@@ -162,6 +162,17 @@ function emitDb() {
 let db = readDb();
 const onlineUserIds = new Set();
 
+async function applySupportPassword() {
+  const password = process.env.SUPPORT_PASSWORD;
+  const user = db.users.find((entry) => entry.username === "ata");
+  if (!password || !user) return;
+  const matches = user.password.startsWith("$2") ? await bcrypt.compare(password, user.password) : user.password === password;
+  if (!matches) {
+    user.password = await bcrypt.hash(password, 12);
+    db = writeDb(db);
+  }
+}
+
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -446,8 +457,9 @@ io.on("connection", (socket) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`StudFlow multi-user backend running on http://0.0.0.0:${port}`);
   if (supabase) {
-    void hydrateCloudDb();
+    void hydrateCloudDb().then(applySupportPassword);
   } else {
     console.log("Supabase is not configured; using local data/db.json storage.");
+    void applySupportPassword();
   }
 });

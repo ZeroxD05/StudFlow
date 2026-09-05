@@ -356,6 +356,30 @@ export async function loginUser(email: string, password: string) {
     (candidate.internalEmail ?? candidate.email).toLowerCase() === normalized
   );
 
+  if (user) {
+    try {
+      const authResponse = await fetch(`${SERVER_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, password }),
+      });
+      if (authResponse.ok) {
+        const authResult = await authResponse.json() as { user?: CampusUser; token?: string };
+        if (authResult.user && authResult.token) {
+          localAuthToken = authResult.token;
+          await AsyncStorage.setItem(AUTH_TOKEN_KEY, localAuthToken);
+          localSessionUserId = authResult.user.id;
+          await AsyncStorage.setItem(SESSION_KEY, localSessionUserId);
+          dbState = { ...dbState, users: dbState.users.map((candidate) => candidate.id === authResult.user?.id ? authResult.user as CampusUser : candidate), currentUserId: localSessionUserId };
+          listeners.forEach((listener) => listener());
+          return authResult.user;
+        }
+      }
+    } catch {
+      // Fall back to local authentication when the server is unavailable.
+    }
+  }
+
   const passwordHash = await hashPassword(password);
   const passwordMatches = user ? user.password === password || user.password === passwordHash : false;
 

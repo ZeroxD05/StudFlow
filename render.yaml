@@ -14,5 +14,7 @@ services:
         sync: false
       - key: AUTH_SECRET
         sync: false
+      - key: SUPPORT_PASSWORD
+        sync: false
       - key: CORS_ORIGIN
         sync: false
