@@ -36,9 +36,13 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
     onPanResponderMove: (_, gesture) => translateX.setValue(Math.max(0, Math.min(gesture.dx, actionWidth))),
     onPanResponderRelease: (_, gesture) => {
-      const nextOpen = gesture.dx > 80;
+      const nextOpen = gesture.dx > 24;
       setIsOpen(nextOpen);
-      Animated.spring(translateX, { toValue: nextOpen ? actionWidth : 0, useNativeDriver: true, bounciness: 0 }).start();
+      Animated.spring(translateX, { toValue: nextOpen ? actionWidth : 0, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
+    },
+    onPanResponderTerminate: () => {
+      setIsOpen(false);
+      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
     },
   })).current;
 
