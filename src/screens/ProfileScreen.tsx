@@ -14,9 +14,6 @@ export default function ProfileScreen() {
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
-    major: currentUser?.major ?? "",
-    semester: String(currentUser?.semester ?? 1),
-    bio: currentUser?.bio ?? "",
     campus: currentUser?.campus ?? "",
   });
 
@@ -28,9 +25,6 @@ export default function ProfileScreen() {
     setForm({
       name: currentUser.name,
       linkedEmail: currentUser.linkedEmail ?? "",
-      major: currentUser.major,
-      semester: String(currentUser.semester),
-      bio: currentUser.bio,
       campus: currentUser.campus,
     });
   }, [currentUser]);
@@ -50,9 +44,6 @@ export default function ProfileScreen() {
         updateCurrentUser({
           name: form.name,
           linkedEmail: form.linkedEmail,
-          major: form.major,
-          semester: Number(form.semester) || 1,
-          bio: form.bio,
           campus: form.campus,
         });
       } catch (error: any) {
@@ -206,17 +197,8 @@ export default function ProfileScreen() {
                 style={styles.input}
               />
 
-              <Text style={styles.label}>Studiengang</Text>
-              <TextInput value={form.major} onChangeText={(value) => setForm((prev) => ({ ...prev, major: value }))} style={styles.input} />
-
-              <Text style={styles.label}>Semester</Text>
-              <TextInput value={form.semester} keyboardType="numeric" onChangeText={(value) => setForm((prev) => ({ ...prev, semester: value }))} style={styles.input} />
-
               <Text style={styles.label}>Campus</Text>
               <TextInput value={form.campus} onChangeText={(value) => setForm((prev) => ({ ...prev, campus: value }))} style={styles.input} />
-
-              <Text style={styles.label}>Bio</Text>
-              <TextInput value={form.bio} multiline onChangeText={(value) => setForm((prev) => ({ ...prev, bio: value }))} style={[styles.input, styles.bioInput]} />
 
               <TouchableOpacity style={styles.primaryButton} onPress={saveProfile} disabled={isSavingProfile}>
                 <View style={styles.buttonContent}>
