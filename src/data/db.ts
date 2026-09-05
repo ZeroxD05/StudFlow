@@ -550,6 +550,7 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     sender: "me",
     text: trimmed,
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
+    createdAt: new Date().toISOString(),
   };
 
   updateDb((draft) => ({
@@ -582,6 +583,7 @@ export function sendSupportMessage(text: string) {
     sender: "me",
     text: trimmed,
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
+    createdAt: new Date().toISOString(),
   };
 
   updateDb((draft) => ({

@@ -19,6 +19,7 @@ export type DirectMessage = {
   sender: "me" | "match";
   text: string;
   timestamp: string;
+  createdAt?: string;
 };
 
 export type ScheduleItem = {

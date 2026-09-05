@@ -4,6 +4,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
+import { DirectMessage } from "@/types";
+
+const getMessageDate = (message: DirectMessage) => {
+  const value = message.createdAt ?? (message.timestamp.includes("T") ? message.timestamp : null);
+  if (!value || Number.isNaN(new Date(value).getTime())) {
+    return null;
+  }
+  return new Date(value);
+};
+
+const formatMessageDay = (message: DirectMessage) => {
+  const date = getMessageDate(message);
+  return date ? new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "numeric", month: "long" }).format(date) : null;
+};
+
+const formatMessageTime = (message: DirectMessage) => {
+  const date = getMessageDate(message);
+  return date ? date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : message.timestamp;
+};
 
 export default function MatchingScreen() {
   const db = useAppDb();
@@ -165,14 +184,27 @@ export default function MatchingScreen() {
                 <Text style={styles.emptyChatText}>Schreib {selectedFriend.name} eine Nachricht.</Text>
               </View>
             ) : (
-              messages.map((message) => (
-                <View key={message.id} style={[styles.messageRow, message.senderId === currentUser?.id && styles.messageRowMe]}>
-                  <View style={[styles.bubble, message.senderId === currentUser?.id ? styles.bubbleMe : styles.bubbleFriend]}>
-                    <Text style={[styles.messageText, message.senderId === currentUser?.id && styles.messageTextMe]}>{message.text}</Text>
-                    <Text style={[styles.messageTime, message.senderId === currentUser?.id && styles.messageTimeMe]}>{message.timestamp}</Text>
-                  </View>
-                </View>
-              ))
+              messages.map((message, messageIndex) => {
+                const messageDay = formatMessageDay(message);
+                const previousMessageDay = messageIndex > 0 ? formatMessageDay(messages[messageIndex - 1]) : null;
+                const showDaySeparator = Boolean(messageDay && messageDay !== previousMessageDay);
+
+                return (
+                  <React.Fragment key={message.id}>
+                    {showDaySeparator ? (
+                      <View style={styles.daySeparator}>
+                        <Text style={styles.daySeparatorText}>{messageDay}</Text>
+                      </View>
+                    ) : null}
+                    <View style={[styles.messageRow, message.senderId === currentUser?.id && styles.messageRowMe]}>
+                      <View style={[styles.bubble, message.senderId === currentUser?.id ? styles.bubbleMe : styles.bubbleFriend]}>
+                        <Text style={[styles.messageText, message.senderId === currentUser?.id && styles.messageTextMe]}>{message.text}</Text>
+                        <Text style={[styles.messageTime, message.senderId === currentUser?.id && styles.messageTimeMe]}>{formatMessageTime(message)}</Text>
+                      </View>
+                    </View>
+                  </React.Fragment>
+                );
+              })
             )}
           </ScrollView>
 
@@ -342,6 +374,8 @@ const styles = StyleSheet.create({
   emptyChatText: { color: colors.textSecondary, marginTop: spacing.xs },
   messageRow: { flexDirection: "row", marginBottom: spacing.sm },
   messageRowMe: { justifyContent: "flex-end" },
+  daySeparator: { alignItems: "center", marginTop: spacing.sm, marginBottom: spacing.md },
+  daySeparatorText: { color: colors.textMuted, fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
   bubble: { maxWidth: "82%", borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   bubbleFriend: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   bubbleMe: { backgroundColor: colors.primary },
