@@ -254,18 +254,22 @@ export function syncQuickLinksForUser(user: CampusUser) {
 
 export const getDbSnapshot = () => clone(dbState);
 
-export function updateDb(mutator: (draft: CampusDB) => CampusDB) {
+export function updateDb(mutator: (draft: CampusDB) => CampusDB, syncServer = true) {
   const nextState = mutator(clone(dbState));
   dbState = nextState;
-  serverSocket?.emit("presence:identify", dbState.currentUserId);
+  if (syncServer) {
+    serverSocket?.emit("presence:identify", dbState.currentUserId);
+  }
 
-  fetch(`${SERVER_URL}/api/db`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dbState),
-  }).catch(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState)).catch(() => undefined);
-  });
+  if (syncServer) {
+    fetch(`${SERVER_URL}/api/db`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dbState),
+    }).catch(() => {
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState)).catch(() => undefined);
+    });
+  }
 
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState)).catch(() => undefined);
   listeners.forEach((listener) => listener());
@@ -730,7 +734,15 @@ export function addCommentToPost(postId: string, text: string) {
         commentsList: [...(post.commentsList ?? []), comment],
       };
     }),
-  }));
+  }), false);
+
+  void fetch(`${SERVER_URL}/api/posts/${encodeURIComponent(postId)}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: currentUser.id, text: trimmed }),
+  }).catch(() => {
+    void hydrateDb();
+  });
 
   return comment;
 }
