@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
+import { createManagedUser, createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [newsBody, setNewsBody] = useState("");
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
+  const [managedForm, setManagedForm] = useState({ name: "", username: "", linkedEmail: "", password: "" });
   const [adminFeedback, setAdminFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const isCentralAdmin = currentUser?.username === "ata";
@@ -328,6 +329,18 @@ export default function ProfileScreen() {
               </View>
             ))}
             </> : null}
+            {currentUser.role === "admin" && !isCentralAdmin ? (
+              <>
+                <Text style={styles.adminSubheading}>Dozenten registrieren</Text>
+                <Text style={styles.adminHelpText}>Dozenten für deine Hochschule können danach Schüler anlegen.</Text>
+                {(["name", "username", "linkedEmail", "password"] as const).map((field) => (
+                  <TextInput key={field} value={managedForm[field]} onChangeText={(value) => setManagedForm((current) => ({ ...current, [field]: value }))} placeholder={{ name: "Name", username: "Benutzername", linkedEmail: "Uni-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "name" && styles.adminFieldSpacing]} autoCapitalize="none" />
+                ))}
+                <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "lecturer" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); }}>
+                  <Text style={styles.primaryButtonText}>Dozent erstellen</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
             <>
                 <Text style={styles.adminSubheading}>News veröffentlichen</Text>
                 <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
@@ -393,6 +406,18 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             {adminFeedback ? <Text style={[styles.adminFeedback, adminFeedback.type === "error" ? styles.adminFeedbackError : styles.adminFeedbackSuccess]}>{adminFeedback.text}</Text> : null}
             </> : null}
+          </View>
+        ) : null}
+        {currentUser.role === "lecturer" ? (
+          <View style={styles.adminCard}>
+            <Text style={styles.sectionTitle}>Schüler registrieren</Text>
+            <Text style={styles.sectionDescription}>Lege Schüler in deiner Hochschule an. Sie müssen sich nicht separat registrieren.</Text>
+            {(["name", "username", "linkedEmail", "password"] as const).map((field) => (
+              <TextInput key={field} value={managedForm[field]} onChangeText={(value) => setManagedForm((current) => ({ ...current, [field]: value }))} placeholder={{ name: "Name", username: "Benutzername", linkedEmail: "Uni-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "name" && styles.adminFieldSpacing]} autoCapitalize="none" />
+            ))}
+            <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "student" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); }}>
+              <Text style={styles.primaryButtonText}>Schüler erstellen</Text>
+            </TouchableOpacity>
           </View>
         ) : null}
         <View style={styles.legalLinks}>

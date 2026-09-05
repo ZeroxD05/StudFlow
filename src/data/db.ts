@@ -7,7 +7,7 @@ import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, Qui
 export type CampusUser = {
   id: string;
   tenantId?: string;
-  role?: "student" | "admin";
+  role?: "student" | "lecturer" | "admin";
   name: string;
   email: string;
   internalEmail?: string;
@@ -421,7 +421,7 @@ export async function deleteUniversityNews(id: string) {
   }
 }
 
-export async function createTenantAdmin(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string }) {
+export async function createManagedUser(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string; role: "student" | "lecturer" | "admin" }) {
   const response = await fetch(`${SERVER_URL}/api/admin/users`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(input) });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -429,6 +429,8 @@ export async function createTenantAdmin(input: { tenantId: string; name: string;
   }
   return await response.json() as CampusUser;
 }
+
+export const createTenantAdmin = (input: Omit<Parameters<typeof createManagedUser>[0], "role">) => createManagedUser({ ...input, role: "admin" });
 
 export const getCurrentUser = () =>
   dbState.users.find((user) => user.id === dbState.currentUserId) ?? null;
