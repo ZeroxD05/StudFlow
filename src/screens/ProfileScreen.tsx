@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { deleteCurrentUser, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
+import { createTenant, deleteCurrentUser, listTenants, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -13,6 +13,8 @@ export default function ProfileScreen() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isProfileDataOpen, setIsProfileDataOpen] = useState(false);
   const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | "terms" | null>(null);
+  const [tenantName, setTenantName] = useState("");
+  const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([]);
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
@@ -30,6 +32,12 @@ export default function ProfileScreen() {
       campus: currentUser.campus,
     });
   }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser?.role === "admin") {
+      listTenants().then(setTenants).catch(() => undefined);
+    }
+  }, [currentUser?.id, currentUser?.role]);
 
   if (!currentUser) {
     return null;
@@ -309,6 +317,19 @@ export default function ProfileScreen() {
             <Text style={styles.deleteButtonText}>Konto löschen</Text>
           </TouchableOpacity>
         </View>
+        {currentUser.role === "admin" ? (
+          <View style={styles.adminCard}>
+            <Text style={styles.sectionTitle}>Hochschulverwaltung</Text>
+            <Text style={styles.sectionDescription}>Lege getrennte Mandanten für Hochschulen an.</Text>
+            <View style={styles.adminCreateRow}>
+              <TextInput value={tenantName} onChangeText={setTenantName} placeholder="Name der Hochschule" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
+              <TouchableOpacity style={styles.adminAddButton} onPress={async () => { if (!tenantName.trim()) return; const tenant = await createTenant(tenantName); setTenants((current) => [...current, tenant]); setTenantName(""); }}>
+                <Ionicons name="add" size={20} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+            {tenants.map((tenant) => <Text key={tenant.id} style={styles.tenantRow}>{tenant.name}</Text>)}
+          </View>
+        ) : null}
         <View style={styles.legalLinks}>
           <TouchableOpacity onPress={() => setLegalPage("imprint")}>
             <Text style={styles.legalLink}>Impressum</Text>
@@ -603,6 +624,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginTop: spacing.md,
   },
+  adminCard: { backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginTop: spacing.md },
+  adminCreateRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  adminInput: { flex: 1, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingVertical: 12 },
+  adminAddButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  tenantRow: { color: colors.textSecondary, fontSize: 13, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   legalLinks: {
     flexDirection: "row",
     justifyContent: "center",

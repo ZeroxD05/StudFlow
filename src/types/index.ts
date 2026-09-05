@@ -85,6 +85,7 @@ export type CommunityPost = {
 export type CampusUser = {
   id: string;
   tenantId?: string;
+  role?: "student" | "admin";
   name: string;
   email: string;
   internalEmail?: string;
@@ -104,4 +105,9 @@ export type CampusUser = {
   notificationsMuted?: boolean;
   mutedChatThreadIds?: string[];
   scheduleRemindersEnabled?: boolean;
+};
+
+export type Tenant = {
+  id: string;
+  name: string;
 };

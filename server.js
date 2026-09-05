@@ -64,9 +64,16 @@ const requireAuth = (req, res, next) => {
   req.authUser = user;
   next();
 };
+const requireAdmin = (req, res, next) => {
+  requireAuth(req, res, () => {
+    if (req.authUser.role !== "admin") return res.status(403).json({ error: "Adminrechte erforderlich." });
+    next();
+  });
+};
 
 const defaultDb = {
   currentUserId: null,
+  tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo" }],
   users: [],
   quickLinks: [
     { id: "moodle", label: "Moodle", icon: "book-outline", url: "https://moodle.org/" },
@@ -102,8 +109,8 @@ function readDb() {
   try {
     const raw = fs.readFileSync(dbFile, "utf8");
     const parsed = JSON.parse(raw);
-    const users = (parsed.users ?? []).map((user) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo" }));
-    return { ...defaultDb, ...parsed, users, communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
+    const users = (parsed.users ?? []).map((user) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo", role: user.role || (user.username === "ata" ? "admin" : "student") }));
+    return { ...defaultDb, ...parsed, users, tenants: parsed.tenants ?? defaultDb.tenants, communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
   } catch (error) {
     fs.writeFileSync(dbFile, JSON.stringify(defaultDb, null, 2));
     return { ...defaultDb };
@@ -112,7 +119,7 @@ function readDb() {
 
 function writeDb(nextDb) {
   ensureDbFile();
-  const users = (nextDb.users ?? []).map(({ online, ...user }) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo" }));
+  const users = (nextDb.users ?? []).map(({ online, ...user }) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo", role: user.role || (user.username === "ata" ? "admin" : "student") }));
   const safeDb = { ...defaultDb, ...nextDb, currentUserId: null, users, communityPosts: nextDb.communityPosts ?? [], directMessages: nextDb.directMessages ?? {} };
   fs.writeFileSync(dbFile, JSON.stringify(safeDb, null, 2));
   void persistCloudDb(safeDb);
@@ -315,6 +322,21 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.get("/api/users", requireAuth, (_, res) => {
   res.json(db.users);
+});
+
+app.get("/api/admin/tenants", requireAdmin, (_, res) => {
+  res.json(db.tenants || []);
+});
+
+app.post("/api/admin/tenants", requireAdmin, (req, res) => {
+  const name = String(req.body?.name || "").trim();
+  const id = normalizeTenantId(name);
+  if (!name || id === "study2buddy-demo") return res.status(400).json({ error: "Bitte einen gültigen Hochschulnamen angeben." });
+  if ((db.tenants || []).some((tenant) => tenant.id === id)) return res.status(409).json({ error: "Diese Hochschule existiert bereits." });
+  const tenant = { id, name };
+  db.tenants = [...(db.tenants || []), tenant];
+  db = writeDb(db);
+  res.status(201).json(tenant);
 });
 
 app.patch("/api/schedules", requireAuth, (req, res) => {

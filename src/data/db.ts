@@ -2,11 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem } from "@/types";
+import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem, Tenant } from "@/types";
 
 export type CampusUser = {
   id: string;
   tenantId?: string;
+  role?: "student" | "admin";
   name: string;
   email: string;
   internalEmail?: string;
@@ -30,6 +31,7 @@ export type CampusUser = {
 
 export type CampusDB = {
   currentUserId: string | null;
+  tenants: Tenant[];
   users: CampusUser[];
   quickLinks: QuickLink[];
   todaySchedule: ScheduleItem[];
@@ -50,6 +52,7 @@ const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || (process.env.NODE_ENV === 
 const defaultUser: CampusUser = {
   id: "demo-user",
   tenantId: "study2buddy-demo",
+  role: "admin",
   name: "Ata",
   email: "ata2005hh@gmail.com",
   internalEmail: "ata@study2buddy.de",
@@ -89,6 +92,7 @@ const defaultDirectMessages: Record<string, DirectMessage[]> = {};
 
 export const createDefaultDB = (): CampusDB => ({
   currentUserId: null,
+  tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo" }],
   users: [defaultUser],
   quickLinks: defaultQuickLinks,
   todaySchedule: defaultSchedule,
@@ -352,6 +356,22 @@ export function useAppDb() {
   }, []);
 
   return value;
+}
+
+export async function listTenants() {
+  const response = await fetch(`${SERVER_URL}/api/admin/tenants`, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Hochschulen konnten nicht geladen werden.");
+  return await response.json() as Tenant[];
+}
+
+export async function createTenant(name: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/tenants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) throw new Error("Hochschule konnte nicht angelegt werden.");
+  return await response.json() as Tenant;
 }
 
 export const getCurrentUser = () =>
