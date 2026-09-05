@@ -73,10 +73,6 @@ export default function LoginScreen() {
       Alert.alert("Ungültiger Benutzername", "Der Benutzername darf nur Buchstaben und Zahlen enthalten.");
       return;
     }
-    if (usernameTaken) {
-      Alert.alert("Benutzername vergeben", "Bitte wähle einen anderen Benutzernamen.");
-      return;
-    }
     if (registerForm.password.length < 6) {
       Alert.alert("Passwort zu kurz", "Das Passwort muss mindestens 6 Zeichen lang sein.");
       return;

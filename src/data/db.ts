@@ -467,28 +467,13 @@ export async function registerUser(input: {
   if (input.password.length < 6) {
     throw new Error("Das Passwort muss mindestens 6 Zeichen lang sein.");
   }
-  if (dbState.users.some((user) => user.username.toLowerCase() === username)) {
-    throw new Error("Dieser Benutzername ist bereits vergeben.");
-  }
-  const generatedEmail = buildStudyEmail(username);
-  const generatedInternalEmail = generatedEmail;
   const passwordHash = await hashPassword(input.password);
-  const exists = dbState.users.some(
-    (user) =>
-      user.email.toLowerCase() === generatedEmail ||
-      user.username.toLowerCase() === username ||
-      (user.internalEmail ?? user.email).toLowerCase() === generatedInternalEmail
-  );
-
-  if (exists) {
-    throw new Error("Dieser Benutzername oder diese Mail ist bereits registriert.");
-  }
 
   let newUser: CampusUser = {
     id: `user-${Date.now()}`,
     name,
-    email: generatedEmail,
-    internalEmail: generatedInternalEmail,
+    email: buildStudyEmail(username),
+    internalEmail: buildStudyEmail(username),
     password: passwordHash,
     major: input.major ?? "Informatik",
     semester: input.semester ?? 1,
