@@ -376,6 +376,17 @@ export async function createTenant(name: string, emailDomain: string, adminEmail
   return await response.json() as Tenant;
 }
 
+export async function updateTenant(tenantId: string, adminEmail: string | null) {
+  const response = await fetch(`${SERVER_URL}/api/admin/tenants/${encodeURIComponent(tenantId)}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ adminEmail }) });
+  if (!response.ok) throw new Error("Hochschule konnte nicht aktualisiert werden.");
+  return await response.json() as Tenant;
+}
+
+export async function deleteTenant(tenantId: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/tenants/${encodeURIComponent(tenantId)}`, { method: "DELETE", headers: authHeaders() });
+  if (!response.ok) throw new Error("Hochschule konnte nicht gelöscht werden.");
+}
+
 export async function createUniversityNews(title: string, body: string) {
   const response = await fetch(`${SERVER_URL}/api/admin/news`, {
     method: "POST",

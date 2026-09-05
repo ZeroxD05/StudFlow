@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, listTenants, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
+import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, listTenants, logoutUser, updateCurrentUser, updateTenant, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -16,7 +16,9 @@ export default function ProfileScreen() {
   const [tenantName, setTenantName] = useState("");
   const [tenantDomain, setTenantDomain] = useState("");
   const [tenantAdminEmail, setTenantAdminEmail] = useState("");
-  const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([]);
+  const [tenants, setTenants] = useState<Array<{ id: string; name: string; emailDomain?: string; adminEmail?: string }>>([]);
+  const [editingTenantId, setEditingTenantId] = useState<string | null>(null);
+  const [editingAdminEmail, setEditingAdminEmail] = useState("");
   const [newsTitle, setNewsTitle] = useState("");
   const [newsBody, setNewsBody] = useState("");
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
@@ -334,7 +336,25 @@ export default function ProfileScreen() {
                 <Ionicons name="add" size={20} color={colors.white} />
               </TouchableOpacity>
             </View>
-            {tenants.map((tenant) => <Text key={tenant.id} style={styles.tenantRow}>{tenant.name}</Text>)}
+            {tenants.map((tenant) => (
+              <View key={tenant.id} style={styles.tenantRow}>
+                <View style={styles.tenantInfo}>
+                  <Text style={styles.tenantName}>{tenant.name}</Text>
+                  <Text style={styles.tenantMeta}>{tenant.emailDomain ?? "Keine Domain"} · {tenant.adminEmail ?? "Kein Admin"}</Text>
+                </View>
+                <View style={styles.tenantActions}>
+                  <TouchableOpacity onPress={() => { setEditingTenantId(tenant.id); setEditingAdminEmail(tenant.adminEmail ?? ""); }}><Ionicons name="create-outline" size={19} color={colors.primary} /></TouchableOpacity>
+                  <TouchableOpacity onPress={async () => { await updateTenant(tenant.id, null); setTenants((items) => items.map((item) => item.id === tenant.id ? { ...item, adminEmail: undefined } : item)); }}><Ionicons name="person-remove-outline" size={19} color={colors.accent} /></TouchableOpacity>
+                  <TouchableOpacity onPress={async () => { await deleteTenant(tenant.id); setTenants((items) => items.filter((item) => item.id !== tenant.id)); }}><Ionicons name="trash-outline" size={19} color="#C0392B" /></TouchableOpacity>
+                </View>
+                {editingTenantId === tenant.id ? (
+                  <View style={styles.tenantEditRow}>
+                    <TextInput value={editingAdminEmail} onChangeText={setEditingAdminEmail} placeholder="Neue Admin-Mail" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" keyboardType="email-address" />
+                    <TouchableOpacity style={styles.smallSaveButton} onPress={async () => { const updated = await updateTenant(tenant.id, editingAdminEmail); setTenants((items) => items.map((item) => item.id === tenant.id ? { ...item, adminEmail: updated.adminEmail } : item)); setEditingTenantId(null); }}><Text style={styles.smallSaveText}>Speichern</Text></TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ))}
             <Text style={styles.adminSubheading}>News veröffentlichen</Text>
             <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
             <TextInput value={newsBody} onChangeText={setNewsBody} placeholder="Nachricht der Hochschule" placeholderTextColor={colors.textMuted} style={[styles.adminInput, styles.newsAdminInput]} multiline />
@@ -645,10 +665,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   adminCard: { backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginTop: spacing.md },
-  adminCreateRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  adminInput: { flex: 1, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingVertical: 12 },
+  adminCreateRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm },
+  adminInput: { flex: 1, minWidth: 150, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingVertical: 12 },
   adminAddButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  tenantRow: { color: colors.textSecondary, fontSize: 13, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tenantRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tenantInfo: { flex: 1, minWidth: 0 },
+  tenantName: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  tenantMeta: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
+  tenantActions: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.sm },
+  tenantEditRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
+  smallSaveButton: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 10 },
+  smallSaveText: { color: colors.white, fontSize: 12, fontWeight: "800" },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
   adminFieldSpacing: { marginTop: spacing.sm },

@@ -362,6 +362,24 @@ app.post("/api/admin/tenants", requireAdmin, (req, res) => {
   res.status(201).json(tenant);
 });
 
+app.patch("/api/admin/tenants/:tenantId", requireAdmin, (req, res) => {
+  const tenant = (db.tenants || []).find((entry) => entry.id === req.params.tenantId);
+  if (!tenant) return res.status(404).json({ error: "Hochschule nicht gefunden." });
+  const adminEmail = String(req.body?.adminEmail || "").trim().toLowerCase();
+  if (adminEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adminEmail)) return res.status(400).json({ error: "Ungültige Admin-Mail." });
+  tenant.adminEmail = adminEmail || undefined;
+  db = writeDb(db);
+  res.json(tenant);
+});
+
+app.delete("/api/admin/tenants/:tenantId", requireAdmin, (req, res) => {
+  if (req.params.tenantId === "study2buddy-demo") return res.status(400).json({ error: "Der Default-Tenant kann nicht gelöscht werden." });
+  if (!(db.tenants || []).some((entry) => entry.id === req.params.tenantId)) return res.status(404).json({ error: "Hochschule nicht gefunden." });
+  db.tenants = db.tenants.filter((entry) => entry.id !== req.params.tenantId);
+  db = writeDb(db);
+  res.json({ ok: true });
+});
+
 app.post("/api/admin/news", requireTenantAdmin, (req, res) => {
   const title = String(req.body?.title || "").trim();
   const body = String(req.body?.body || "").trim();
