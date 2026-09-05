@@ -25,6 +25,8 @@ export default function ProfileScreen() {
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
   const [managedForm, setManagedForm] = useState({ name: "", username: "", linkedEmail: "", password: "" });
   const [managedUsers, setManagedUsers] = useState<Array<{ id: string; name: string; username: string; linkedEmail?: string; role?: string }>>([]);
+  const [managedUserSearch, setManagedUserSearch] = useState("");
+  const [expandedManagedUsers, setExpandedManagedUsers] = useState<Set<string>>(new Set());
   const [adminFeedback, setAdminFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [managedFeedback, setManagedFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -392,18 +394,27 @@ export default function ProfileScreen() {
             {managedUsers.length > 0 ? (
               <View style={styles.managedUsersSection}>
                 <Text style={styles.adminSubheading}>{isCentralAdmin ? "Verwaltete Konten" : "Meine Dozenten"}</Text>
-                {managedUsers.map((managedUser) => (
+                <TextInput value={managedUserSearch} onChangeText={setManagedUserSearch} placeholder="Nach Hochschul-Mail suchen" placeholderTextColor={colors.textMuted} style={styles.managedSearchInput} autoCapitalize="none" keyboardType="email-address" />
+                {managedUsers.filter((managedUser) => `${managedUser.name} ${managedUser.username} ${managedUser.linkedEmail ?? ""}`.toLowerCase().includes(managedUserSearch.trim().toLowerCase())).map((managedUser) => {
+                  const isExpanded = expandedManagedUsers.has(managedUser.id);
+                  return (
                   <View key={managedUser.id} style={styles.managedUserRow}>
-                    <View style={styles.managedUserInfo}>
-                      <Text style={styles.tenantName}>{managedUser.name}</Text>
-                      <Text style={styles.tenantMeta}>{managedUser.username} · {managedUser.linkedEmail ?? "Keine Uni-Mail"}</Text>
-                    </View>
-                    <Text style={styles.managedUserRole}>{managedUser.role === "lecturer" ? "Dozent" : managedUser.role === "admin" ? "Admin" : "Schüler"}</Text>
+                    <TouchableOpacity style={styles.managedUserHeader} onPress={() => setExpandedManagedUsers((current) => { const next = new Set(current); if (next.has(managedUser.id)) next.delete(managedUser.id); else next.add(managedUser.id); return next; })} activeOpacity={0.75}>
+                      <View style={styles.managedUserInfo}>
+                        <Text style={styles.tenantName}>{managedUser.name}</Text>
+                        <Text style={styles.tenantMeta}>{managedUser.linkedEmail ?? "Keine Uni-Mail"}</Text>
+                      </View>
+                      <Text style={styles.managedUserRole}>{managedUser.role === "lecturer" ? "Dozent" : managedUser.role === "admin" ? "Admin" : "Schüler"}</Text>
+                      <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                    {isExpanded ? <>
+                    <Text style={styles.managedUserUsername}>Benutzername: {managedUser.username}</Text>
                     <View style={styles.managedUserActions}>
                       <TouchableOpacity onPress={() => { setEditingManagedId(managedUser.id); setManagedEditForm({ name: managedUser.name, linkedEmail: managedUser.linkedEmail ?? "", password: "" }); }}><Ionicons name="create-outline" size={18} color={colors.primary} /></TouchableOpacity>
                       <TouchableOpacity onPress={async () => { await deleteManagedUser(managedUser.id); setManagedUsers((items) => items.filter((item) => item.id !== managedUser.id)); }}><Ionicons name="trash-outline" size={18} color="#C0392B" /></TouchableOpacity>
                     </View>
-                    {editingManagedId === managedUser.id ? (
+                    </> : null}
+                    {isExpanded && editingManagedId === managedUser.id ? (
                       <View style={styles.managedEditRow}>
                         <TextInput value={managedEditForm.name} onChangeText={(value) => setManagedEditForm((current) => ({ ...current, name: value }))} placeholder="Name" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
                         <TextInput value={managedEditForm.linkedEmail} onChangeText={(value) => setManagedEditForm((current) => ({ ...current, linkedEmail: value }))} placeholder="Uni-Mail" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" />
@@ -412,7 +423,8 @@ export default function ProfileScreen() {
                       </View>
                     ) : null}
                   </View>
-                ))}
+                  );
+                })}
               </View>
             ) : null}
             {isCentralAdmin ? <>
@@ -784,6 +796,9 @@ const styles = StyleSheet.create({
   managedUserRole: { color: colors.primary, fontSize: 11, fontWeight: "800" },
   managedUserActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   managedEditRow: { width: "100%", marginTop: spacing.sm, gap: spacing.sm },
+  managedSearchInput: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.textPrimary, paddingHorizontal: spacing.md, paddingVertical: 11, marginBottom: spacing.sm },
+  managedUserHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  managedUserUsername: { color: colors.textSecondary, fontSize: 12, marginTop: spacing.sm },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   adminHelpText: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
