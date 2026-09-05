@@ -393,6 +393,7 @@ export default function ProfileScreen() {
               </View>
             ))}
             <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
+            <Text style={styles.adminHelpText}>Dieses Formular erstellt das Admin-Konto direkt. Eine separate Registrierung ist danach nicht nötig. Die Admin-Mail darf von der Uni-Domain abweichen.</Text>
             {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
               <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={{ tenantId: "Tenant-ID", name: "Name", username: "Benutzername", linkedEmail: "Admin-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
             ))}
@@ -406,7 +407,7 @@ export default function ProfileScreen() {
               try {
                 await createTenantAdmin(adminForm);
                 setAdminForm({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
-                setAdminFeedback({ type: "success", text: "Uni-Admin erfolgreich erstellt. Der Account kann sich jetzt anmelden." });
+                setAdminFeedback({ type: "success", text: `Uni-Admin erfolgreich erstellt. Login: ${adminForm.username}` });
               } catch (error: any) {
                 setAdminFeedback({ type: "error", text: error?.message ?? "Bitte prüfe die Angaben und versuche es erneut." });
               } finally {
@@ -728,6 +729,7 @@ const styles = StyleSheet.create({
   adminFeedbackError: { color: "#C0392B" },
   adminFeedbackSuccess: { color: colors.success },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
+  adminHelpText: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
   adminFieldSpacing: { marginTop: spacing.sm },
   newsAdminRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm, marginTop: spacing.sm },
