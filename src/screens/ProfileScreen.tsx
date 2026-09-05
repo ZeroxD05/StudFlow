@@ -394,7 +394,7 @@ export default function ProfileScreen() {
             ))}
             <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
             {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
-              <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={field === "tenantId" ? "Tenant-ID" : field} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
+              <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={{ tenantId: "Tenant-ID", name: "Name", username: "Benutzername", linkedEmail: "Admin-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
             ))}
             <TouchableOpacity style={styles.primaryButton} onPress={async () => {
               if (!adminForm.tenantId.trim() || !adminForm.name.trim() || !adminForm.username.trim() || !adminForm.linkedEmail.trim() || !adminForm.password.trim()) {

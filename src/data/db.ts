@@ -414,7 +414,10 @@ export async function deleteUniversityNews(id: string) {
 
 export async function createTenantAdmin(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string }) {
   const response = await fetch(`${SERVER_URL}/api/admin/users`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(input) });
-  if (!response.ok) throw new Error("Uni-Admin konnte nicht angelegt werden.");
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error?.error ?? `Serverfehler (${response.status}).`);
+  }
   return await response.json() as CampusUser;
 }
 
