@@ -161,7 +161,7 @@ export default function MatchingScreen() {
 
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "position" : Platform.OS === "android" ? "padding" : undefined}
-            keyboardVerticalOffset={Platform.OS === "web" ? 0 : 32}
+            keyboardVerticalOffset={Platform.OS === "web" ? 0 : 48}
             style={Platform.OS === "web" && webKeyboardOffset > 0 ? { transform: [{ translateY: -webKeyboardOffset }] } : undefined}
           >
             <View style={styles.composer}>
