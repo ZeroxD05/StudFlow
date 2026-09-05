@@ -59,6 +59,7 @@ export type JobListing = {
 
 export type CommunityComment = {
   id: string;
+  authorId?: string;
   author: string;
   text: string;
   timestamp: string;

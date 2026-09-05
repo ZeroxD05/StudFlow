@@ -5,9 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import Card from "@/components/Card";
 import { addCommentToPost, addCommunityPost, addFriend, deleteCommunityPost, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
-import { CommunityPost } from "@/types";
+import { CommunityComment, CommunityPost } from "@/types";
 
-function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment }: { post: CommunityPost; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void }) {
+function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThreadOpen, commentDraft, onToggleThread, onCommentDraftChange, onSubmitComment, resolveCommentAuthorId, canAddCommentFriend, onAddCommentFriend }: { post: CommunityPost; canAddFriend: boolean; onAddFriend: () => void; canDelete: boolean; onDelete: () => void; isThreadOpen: boolean; commentDraft: string; onToggleThread: () => void; onCommentDraftChange: (value: string) => void; onSubmitComment: () => void; resolveCommentAuthorId: (comment: CommunityComment) => string | null; canAddCommentFriend: (authorId: string) => boolean; onAddCommentFriend: (authorId: string) => void }) {
   const initial = post.author.charAt(0).toUpperCase();
   return (
     <Card style={styles.postCard}>
@@ -36,7 +36,9 @@ function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThre
         {post.unread ? <View style={styles.unread}><Text style={styles.unreadText}>{post.unread}</Text></View> : null}
       </View>
 
-      <Text style={[typography.body, styles.postContent]}>{post.content}</Text>
+      <TouchableOpacity onPress={onToggleThread} activeOpacity={0.8}>
+        <Text style={[typography.body, styles.postContent]}>{post.content}</Text>
+      </TouchableOpacity>
 
       <View style={styles.postFooter}>
         <TouchableOpacity style={styles.footerAction} onPress={onToggleThread}>
@@ -51,7 +53,17 @@ function PostCard({ post, canAddFriend, onAddFriend, canDelete, onDelete, isThre
             <View key={comment.id} style={styles.commentRow}>
               <View style={styles.commentAvatar}><Text style={styles.commentAvatarText}>{comment.author.charAt(0).toUpperCase()}</Text></View>
               <View style={styles.commentBubble}>
-                <Text style={styles.commentAuthor}>{comment.author}</Text>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.commentAuthor}>{comment.author}</Text>
+                  {(() => {
+                    const authorId = resolveCommentAuthorId(comment);
+                    return authorId && canAddCommentFriend(authorId) ? (
+                      <TouchableOpacity style={styles.commentAddButton} onPress={() => onAddCommentFriend(authorId)} hitSlop={8}>
+                        <Ionicons name="person-add-outline" size={15} color={colors.primary} />
+                      </TouchableOpacity>
+                    ) : null;
+                  })()}
+                </View>
                 <Text style={styles.commentText}>{comment.text}</Text>
                 <Text style={styles.commentTime}>{comment.timestamp}</Text>
               </View>
@@ -91,6 +103,15 @@ export default function CommunityScreen() {
     }
 
     const matchingUsers = users.filter((user) => user.name === post.author);
+    return matchingUsers.length === 1 ? matchingUsers[0].id : null;
+  };
+
+  const resolveCommentAuthorId = (comment: CommunityComment) => {
+    if (comment.authorId) {
+      return comment.authorId;
+    }
+
+    const matchingUsers = users.filter((user) => user.name === comment.author);
     return matchingUsers.length === 1 ? matchingUsers[0].id : null;
   };
 
@@ -160,6 +181,9 @@ export default function CommunityScreen() {
               canDelete={item.authorId === currentUser?.id || (!item.authorId && item.author === currentUser?.name)}
               onDelete={() => confirmDeletePost(item.id)}
               onAddFriend={() => { if (authorId) addFriend(authorId); }}
+              resolveCommentAuthorId={resolveCommentAuthorId}
+              canAddCommentFriend={(commentAuthorId) => commentAuthorId !== currentUserId && !(currentUser?.friends ?? []).includes(commentAuthorId)}
+              onAddCommentFriend={(commentAuthorId) => addFriend(commentAuthorId)}
               isThreadOpen={openThreadId === item.id}
               commentDraft={commentDrafts[item.id] ?? ""}
               onToggleThread={() => setOpenThreadId((current) => current === item.id ? null : item.id)}
@@ -172,6 +196,7 @@ export default function CommunityScreen() {
             />
           );
         }}
+        onScrollBeginDrag={() => setOpenThreadId(null)}
         showsVerticalScrollIndicator={false}
       />
       {isPostComposerOpen ? (
@@ -632,6 +657,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
+  },
+  commentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  commentAddButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
   },
   commentAuthor: {
     color: colors.textPrimary,

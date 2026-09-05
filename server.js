@@ -314,6 +314,7 @@ app.post("/api/posts/:postId/comments", (req, res) => {
   const user = db.users.find((entry) => entry.id === userId);
   const comment = {
     id: createId("comment"),
+    authorId: user?.id,
     author: user ? user.name : "User",
     text: String(text).trim(),
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),

@@ -715,6 +715,7 @@ export function addCommentToPost(postId: string, text: string) {
 
   const comment = {
     id: `comment-${Date.now()}`,
+    authorId: currentUser.id,
     author: currentUser.name,
     text: trimmed,
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
