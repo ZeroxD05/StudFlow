@@ -24,6 +24,8 @@ export default function LoginScreen() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
+    const [registerFeedback, setRegisterFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [isRegistering, setIsRegistering] = useState(false);
   const shake = useRef(new Animated.Value(0)).current;
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -65,19 +67,21 @@ export default function LoginScreen() {
   };
 
   const handleRegister = async () => {
+      setRegisterFeedback(null);
     if (!registerForm.username.trim() || !registerForm.name.trim() || !registerForm.password || !registerForm.email.trim()) {
-      Alert.alert("Fehlende Angaben", "Bitte fülle Name, Uni-Mail, Benutzername und Passwort aus.");
+        setRegisterFeedback({ type: "error", text: "Bitte fülle Name, Uni-Mail, Benutzername und Passwort aus." });
       return;
     }
     if (!/^[a-zA-Z0-9]+$/.test(registerForm.username.trim())) {
-      Alert.alert("Ungültiger Benutzername", "Der Benutzername darf nur Buchstaben und Zahlen enthalten.");
+        setRegisterFeedback({ type: "error", text: "Der Benutzername darf nur Buchstaben und Zahlen enthalten." });
       return;
     }
     if (registerForm.password.length < 6) {
-      Alert.alert("Passwort zu kurz", "Das Passwort muss mindestens 6 Zeichen lang sein.");
+        setRegisterFeedback({ type: "error", text: "Das Passwort muss mindestens 6 Zeichen lang sein." });
       return;
     }
 
+      setIsRegistering(true);
     try {
       const createdUser = await registerUser({
         name: registerForm.name,
@@ -91,8 +95,11 @@ export default function LoginScreen() {
       });
       setUsername(createdUser.username);
       setPassword(registerForm.password);
+        setRegisterFeedback({ type: "success", text: "Konto erstellt. Du kannst dich jetzt anmelden." });
     } catch (error: any) {
-      Alert.alert("Registrierung fehlgeschlagen", error?.message ?? "Bitte versuche es erneut.");
+        setRegisterFeedback({ type: "error", text: error?.message ?? "Registrierung fehlgeschlagen. Bitte versuche es erneut." });
+      } finally {
+        setIsRegistering(false);
     }
   };
 
@@ -212,8 +219,9 @@ export default function LoginScreen() {
 
 
                 <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
-                  <Text style={styles.primaryButtonText}>Profil erstellen</Text>
+                  <Text style={styles.primaryButtonText}>{isRegistering ? "Wird erstellt ..." : "Profil erstellen"}</Text>
                 </TouchableOpacity>
+                 {registerFeedback ? <Text style={[styles.formFeedback, registerFeedback.type === "error" ? styles.formFeedbackError : styles.formFeedbackSuccess]}>{registerFeedback.text}</Text> : null}
               </>
             )}
           </View>
@@ -369,6 +377,17 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: "800",
     fontSize: 15,
+  },
+  formFeedback: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: spacing.sm,
+  },
+  formFeedbackError: {
+    color: "#C0392B",
+  },
+  formFeedbackSuccess: {
+    color: colors.success,
   },
   disabledButton: {
     opacity: 0.45,
