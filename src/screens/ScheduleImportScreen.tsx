@@ -5,7 +5,7 @@ import { updateDb, useAppDb } from "@/data/db";
 import { ScheduleItem } from "@/types";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 
-const weekDays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+const weekDays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
 type ScheduleEntryInput = {
   id: string;
@@ -114,7 +114,7 @@ export default function ScheduleImportScreen() {
         <Text style={typography.h1}>Stundenplan</Text>
         <Text style={[typography.body, { marginTop: 4 }]}>Mehrere Fächer pro Tag, einfach speichern und später bearbeiten.</Text>
 
-        <View style={styles.tabsRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow} directionalLockEnabled>
           {weekDays.map((day) => (
             <TouchableOpacity
               key={day}
@@ -124,7 +124,7 @@ export default function ScheduleImportScreen() {
               <Text style={[styles.dayTabText, selectedDay === day && styles.dayTabTextActive]}>{day.slice(0, 2)}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{selectedDay}</Text>
@@ -200,13 +200,12 @@ const styles = StyleSheet.create({
   },
   tabsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     marginTop: spacing.lg,
     marginBottom: spacing.md,
     gap: 8,
   },
   dayTab: {
-    flex: 1,
+    width: 64,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
