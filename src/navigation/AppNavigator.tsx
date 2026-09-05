@@ -8,7 +8,7 @@ import ScheduleImportScreen from "@/screens/ScheduleImportScreen";
 import GradesScreen from "@/screens/GradesScreen";
 import CommunityScreen from "@/screens/CommunityScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
-import { useAppDb } from "@/data/db";
+import { getUnreadDirectMessageCount, useAppDb } from "@/data/db";
 import { colors } from "@/theme/theme";
 
 const Tab = createBottomTabNavigator();
@@ -36,10 +36,7 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function AppNavigator() {
   const { currentUserId, directMessages } = useAppDb();
   const unreadMessages = currentUserId
-    ? Object.values(directMessages).reduce((total, messages) => total + messages.filter((message) => {
-        const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
-        return isIncoming && !message.readByUserIds?.includes(currentUserId);
-      }).length, 0)
+    ? Object.values(directMessages).reduce((total, messages) => total + getUnreadDirectMessageCount(messages, currentUserId), 0)
     : 0;
 
   return (

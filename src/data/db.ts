@@ -536,6 +536,17 @@ export function getDirectMessageThreadId(firstUserId: string, secondUserId: stri
   return `dm:${[firstUserId, secondUserId].sort().join(":")}`;
 }
 
+export function getUnreadDirectMessageCount(messages: DirectMessage[], currentUserId: string | null) {
+  if (!currentUserId) {
+    return 0;
+  }
+
+  return messages.filter((message) => {
+    const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
+    return isIncoming && !message.readByUserIds?.includes(currentUserId);
+  }).length;
+}
+
 export function markDirectMessagesAsRead(threadId: string) {
   const currentUser = getCurrentUser();
   if (!currentUser || !threadId) {

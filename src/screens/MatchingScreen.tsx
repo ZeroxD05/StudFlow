@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
+import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { DirectMessage } from "@/types";
 
@@ -56,6 +56,8 @@ export default function MatchingScreen() {
       ? db.directMessages[`support:${currentUser?.id ?? ""}`] ?? []
       : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
+  const supportMessages = db.directMessages[`support:${currentUser?.id ?? ""}`] ?? [];
+  const supportUnreadCount = getUnreadDirectMessageCount(supportMessages, currentUser?.id ?? null);
   const messagesScrollRef = useRef<ScrollView>(null);
   const activeThreadId = isSupportChat ? `support:${currentUser?.id ?? ""}` : currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
 
@@ -291,6 +293,11 @@ export default function MatchingScreen() {
             </View>
             <Text style={styles.friendPreview}>StudFlow-Support</Text>
           </View>
+          {supportUnreadCount > 0 ? (
+            <View style={styles.messageCountBadge}>
+              <Text style={styles.messageCountText}>{supportUnreadCount > 99 ? "99+" : supportUnreadCount}</Text>
+            </View>
+          ) : null}
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
         {friends.length === 0 ? (
@@ -302,6 +309,7 @@ export default function MatchingScreen() {
         ) : friends.map((friend) => {
           const friendMessages = (currentUser ? db.directMessages[getDirectMessageThreadId(currentUser.id, friend.id)] : null) ?? db.directMessages[friend.id] ?? [];
           const lastMessage = friendMessages[friendMessages.length - 1];
+          const unreadCount = getUnreadDirectMessageCount(friendMessages, currentUser?.id ?? null);
           return (
             <TouchableOpacity key={friend.id} style={styles.friendRow} onPress={() => setSelectedFriendId(friend.id)} activeOpacity={0.75}>
               {friend.profileImage ? (
@@ -319,6 +327,11 @@ export default function MatchingScreen() {
                 <Text style={styles.friendPreview} numberOfLines={1}>{lastMessage?.text ?? "Tippen, um zu chatten"}</Text>
               </View>
               <View style={styles.friendMeta}>
+                {unreadCount > 0 ? (
+                  <View style={styles.messageCountBadge}>
+                    <Text style={styles.messageCountText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+                  </View>
+                ) : null}
                 {lastMessage ? <Text style={styles.messageTime}>{lastMessage.timestamp}</Text> : null}
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </View>
@@ -359,6 +372,8 @@ const styles = StyleSheet.create({
   friendName: { color: colors.textPrimary, fontSize: 16, fontWeight: "800" },
   friendPreview: { color: colors.textMuted, marginTop: 5, fontSize: 13 },
   friendMeta: { alignItems: "flex-end", gap: spacing.xs },
+  messageCountBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#D92D3F", alignItems: "center", justifyContent: "center" },
+  messageCountText: { color: colors.white, fontSize: 11, lineHeight: 13, fontWeight: "800", textAlign: "center" },
   onlineDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.success, shadowColor: colors.success, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
   emptyFriends: { alignItems: "center", paddingTop: spacing.xxl, paddingHorizontal: spacing.lg },
   emptyFriendsTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800", marginTop: spacing.md },
