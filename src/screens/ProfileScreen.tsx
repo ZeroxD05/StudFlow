@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { deleteCurrentUser, logoutUser, updateCurrentUser, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
@@ -11,6 +12,7 @@ export default function ProfileScreen() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isProfileDataOpen, setIsProfileDataOpen] = useState(false);
+  const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | null>(null);
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
@@ -31,6 +33,50 @@ export default function ProfileScreen() {
 
   if (!currentUser) {
     return null;
+  }
+
+  if (legalPage) {
+    const isImprint = legalPage === "imprint";
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.legalHeader}>
+          <TouchableOpacity style={styles.legalBackButton} onPress={() => setLegalPage(null)} hitSlop={8}>
+            <Ionicons name="arrow-back" size={23} color={colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.legalHeaderTitle}>{isImprint ? "Impressum" : "Datenschutzerklärung"}</Text>
+        </View>
+        <ScrollView contentContainerStyle={styles.legalContent} showsVerticalScrollIndicator={false}>
+          {isImprint ? (
+            <>
+              <Text style={styles.legalTitle}>Impressum</Text>
+              <Text style={styles.legalHeading}>Angaben gemäß § 5 TMG</Text>
+              <Text style={styles.legalText}>Ata Zeran{"\n"}Reclamstraße 4{"\n"}22111 Hamburg</Text>
+              <Text style={styles.legalHeading}>Kontakt</Text>
+              <Text style={styles.legalText}>Telefon: 015753515471{"\n"}E-Mail: ata2005hh@gmail.com</Text>
+              <Text style={styles.legalHeading}>Verantwortlich für den Inhalt</Text>
+              <Text style={styles.legalText}>Ata Zeran, Reclamstraße 4, 22111 Hamburg</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.legalTitle}>Datenschutzerklärung</Text>
+              <Text style={styles.legalText}>Diese Datenschutzerklärung informiert darüber, welche personenbezogenen Daten in StudFlow verarbeitet werden.</Text>
+              <Text style={styles.legalHeading}>Verantwortlicher</Text>
+              <Text style={styles.legalText}>Ata Zeran{"\n"}Reclamstraße 4, 22111 Hamburg{"\n"}E-Mail: ata2005hh@gmail.com</Text>
+              <Text style={styles.legalHeading}>Verarbeitete Daten</Text>
+              <Text style={styles.legalText}>Bei Registrierung und Nutzung können Name, Benutzername, E-Mail-Adresse, Profilbild, Campusdaten, Stundenplan, Direktnachrichten und Community-Beiträge verarbeitet werden.</Text>
+              <Text style={styles.legalHeading}>Zwecke und Speicherung</Text>
+              <Text style={styles.legalText}>Die Daten werden zur Bereitstellung der App-Funktionen, zur Kontoverwaltung, zur Synchronisierung zwischen Geräten und zur Anzeige von Nachrichten und Stundenplan-Erinnerungen verarbeitet. Lokale Daten können auf dem Gerät gespeichert werden; synchronisierte Daten werden über den eingesetzten App-Server gespeichert.</Text>
+              <Text style={styles.legalHeading}>Bildauswahl und externe Dienste</Text>
+              <Text style={styles.legalText}>Der Zugriff auf die Mediathek erfolgt nur, wenn du ein Profilbild auswählst. Für die technische Bereitstellung können Hosting-, Datenbank- und Netzwerkdienste eingesetzt werden.</Text>
+              <Text style={styles.legalHeading}>Deine Rechte</Text>
+              <Text style={styles.legalText}>Du kannst Auskunft, Berichtigung oder Löschung deiner Daten verlangen. Wende dich dafür an ata2005hh@gmail.com. Dein Konto kannst du außerdem direkt in der App löschen.</Text>
+              <Text style={styles.legalHeading}>Stand</Text>
+              <Text style={styles.legalText}>September 2026</Text>
+            </>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
   const saveProfile = () => {
@@ -235,6 +281,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount}>
             <Text style={styles.deleteButtonText}>Konto löschen</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => setLegalPage("imprint")}>
+            <Text style={styles.legalLink}>Impressum</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalLinkDivider}>·</Text>
+          <TouchableOpacity onPress={() => setLegalPage("privacy")}>
+            <Text style={styles.legalLink}>Datenschutzerklärung</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -517,5 +572,64 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
     marginTop: spacing.md,
+  },
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  legalLink: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  legalLinkDivider: {
+    color: colors.border,
+    fontSize: 12,
+  },
+  legalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  legalBackButton: {
+    marginRight: spacing.md,
+  },
+  legalHeaderTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  legalContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+  },
+  legalTitle: {
+    color: colors.textPrimary,
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: spacing.lg,
+  },
+  legalHeading: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  legalText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 22,
   },
 });
