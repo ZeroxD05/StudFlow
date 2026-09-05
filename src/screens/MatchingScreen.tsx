@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, toggleChatNotifications, useAppDb } from "@/data/db";
@@ -23,6 +24,8 @@ const formatMessageTime = (message: DirectMessage) => {
   const date = getMessageDate(message);
   return date ? date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : message.timestamp;
 };
+
+const SUPPORT_SWIPE_TUTORIAL_KEY = "studflow-support-swipe-tutorial-seen";
 
 function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted, onPress, allowContactActions = true }: { children: React.ReactNode; onBlock: () => void; onRemove: () => void; onToggleMute: () => void; isMuted: boolean; onPress: () => void; allowContactActions?: boolean }) {
   const translateX = useRef(new Animated.Value(0)).current;
@@ -106,6 +109,7 @@ export default function MatchingScreen() {
   const [searchEmail, setSearchEmail] = useState("");
   const [chatActionsVisible, setChatActionsVisible] = useState(false);
   const [webKeyboardOffset, setWebKeyboardOffset] = useState(0);
+  const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
   const supportContact = db.users.find((user) => user.username.toLowerCase() === "ata") ?? {
     id: "support-account",
     name: "Ata",
@@ -137,6 +141,24 @@ export default function MatchingScreen() {
       markDirectMessagesAsRead(activeThreadId);
     }
   }, [activeThreadId, messages.length, selectedFriendId]);
+
+  useEffect(() => {
+    if (!currentUser || selectedFriendId) {
+      return;
+    }
+
+    let isMounted = true;
+    AsyncStorage.getItem(SUPPORT_SWIPE_TUTORIAL_KEY).then((value) => {
+      if (isMounted && value !== "seen") {
+        setShowSwipeTutorial(true);
+        void AsyncStorage.setItem(SUPPORT_SWIPE_TUTORIAL_KEY, "seen");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, selectedFriendId]);
 
   useEffect(() => {
     if (!selectedFriend || Platform.OS === "web") {
@@ -384,6 +406,20 @@ export default function MatchingScreen() {
             ))}
           </View>
         ) : null}
+        {showSwipeTutorial ? (
+          <View style={styles.swipeTutorial}>
+            <View style={styles.swipeTutorialIcon}>
+              <Ionicons name="arrow-forward" size={20} color={colors.white} />
+            </View>
+            <View style={styles.swipeTutorialContent}>
+              <Text style={styles.swipeTutorialTitle}>Tipp zum Wischen</Text>
+              <Text style={styles.swipeTutorialText}>Wische einen Kontakt nach rechts, um Stummschalten, Entfernen oder Blockieren zu öffnen.</Text>
+            </View>
+            <TouchableOpacity style={styles.swipeTutorialClose} onPress={() => setShowSwipeTutorial(false)} hitSlop={8}>
+              <Ionicons name="close" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : null}
         <SwipeableFriendRow
           onPress={() => setSelectedFriendId("support-account")}
           onBlock={() => undefined}
@@ -483,6 +519,12 @@ const styles = StyleSheet.create({
   swipeActionRemove: { width: 76, backgroundColor: "#B7791F", alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionBlock: { width: 78, backgroundColor: "#C0392B", alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionText: { color: colors.white, fontSize: 10, fontWeight: "800" },
+  swipeTutorial: { flexDirection: "row", alignItems: "center", backgroundColor: colors.backgroundAlt, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm },
+  swipeTutorialIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginRight: spacing.sm },
+  swipeTutorialContent: { flex: 1 },
+  swipeTutorialTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  swipeTutorialText: { color: colors.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 2 },
+  swipeTutorialClose: { padding: spacing.xs, marginLeft: spacing.xs },
   swipeRowForeground: { backgroundColor: colors.background },
   friendRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.background },
   friendAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
