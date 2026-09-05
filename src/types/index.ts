@@ -110,4 +110,5 @@ export type CampusUser = {
 export type Tenant = {
   id: string;
   name: string;
+  emailDomain?: string;
 };

@@ -14,6 +14,7 @@ export default function ProfileScreen() {
   const [isProfileDataOpen, setIsProfileDataOpen] = useState(false);
   const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | "terms" | null>(null);
   const [tenantName, setTenantName] = useState("");
+  const [tenantDomain, setTenantDomain] = useState("");
   const [tenants, setTenants] = useState<Array<{ id: string; name: string }>>([]);
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
@@ -323,7 +324,8 @@ export default function ProfileScreen() {
             <Text style={styles.sectionDescription}>Lege getrennte Mandanten für Hochschulen an.</Text>
             <View style={styles.adminCreateRow}>
               <TextInput value={tenantName} onChangeText={setTenantName} placeholder="Name der Hochschule" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
-              <TouchableOpacity style={styles.adminAddButton} onPress={async () => { if (!tenantName.trim()) return; const tenant = await createTenant(tenantName); setTenants((current) => [...current, tenant]); setTenantName(""); }}>
+              <TextInput value={tenantDomain} onChangeText={setTenantDomain} placeholder="uni.de" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" />
+              <TouchableOpacity style={styles.adminAddButton} onPress={async () => { if (!tenantName.trim() || !tenantDomain.trim()) return; const tenant = await createTenant(tenantName, tenantDomain); setTenants((current) => [...current, tenant]); setTenantName(""); setTenantDomain(""); }}>
                 <Ionicons name="add" size={20} color={colors.white} />
               </TouchableOpacity>
             </View>

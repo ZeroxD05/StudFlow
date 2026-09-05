@@ -65,8 +65,8 @@ export default function LoginScreen() {
   };
 
   const handleRegister = async () => {
-    if (!registerForm.username.trim() || !registerForm.name.trim() || !registerForm.password) {
-      Alert.alert("Fehlende Angaben", "Bitte fülle Benutzername, Anzeigename und Passwort aus.");
+    if (!registerForm.username.trim() || !registerForm.name.trim() || !registerForm.password || !registerForm.email.trim()) {
+      Alert.alert("Fehlende Angaben", "Bitte fülle Name, Uni-Mail, Benutzername und Passwort aus.");
       return;
     }
     if (!/^[a-zA-Z0-9]+$/.test(registerForm.username.trim())) {
@@ -83,6 +83,7 @@ export default function LoginScreen() {
         name: registerForm.name,
         username: registerForm.username,
         password: registerForm.password,
+        linkedEmail: registerForm.email,
         major: registerForm.major,
         semester: Number(registerForm.semester) || 1,
         campus: registerForm.campus,
@@ -181,6 +182,18 @@ export default function LoginScreen() {
                 {!usernameTaken && normalizedRegisterUsername ? <Text style={styles.availableText}>Benutzername verfügbar.</Text> : null}
                 <Text style={styles.usernameHint}>Hinweis: Deinen Benutzernamen kannst du später nicht mehr ändern.</Text>
                 <Text style={styles.inlineMail}>Deine App-Mail: {registerForm.username ? `${registerForm.username}@study2buddy.de` : "benutzername@study2buddy.de"}</Text>
+
+                <Text style={styles.label}>Uni-Mail</Text>
+                <TextInput
+                  value={registerForm.email}
+                  onChangeText={(value) => setRegisterForm((prev) => ({ ...prev, email: value.trim().toLowerCase() }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  placeholder="name@hochschule.de"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.input}
+                />
 
                 <Text style={styles.label}>Passwort</Text>
                 <View style={styles.passwordField}>

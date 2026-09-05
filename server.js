@@ -73,7 +73,7 @@ const requireAdmin = (req, res, next) => {
 
 const defaultDb = {
   currentUserId: null,
-  tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo" }],
+  tenants: [{ id: "study2buddy-demo", name: "Study2Buddy Demo", emailDomain: "study2buddy.de" }],
   users: [],
   quickLinks: [
     { id: "moodle", label: "Moodle", icon: "book-outline", url: "https://moodle.org/" },
@@ -248,7 +248,7 @@ app.get("/api/db", (_, res) => {
 });
 
 app.post("/api/auth/register", async (req, res) => {
-  const { name, username, email, password, major, semester, bio, campus } = req.body || {};
+  const { name, username, linkedEmail, password, major, semester, bio, campus } = req.body || {};
   if (!name || !password) {
     return res.status(400).json({ error: "Anzeigename und Passwort sind erforderlich." });
   }
@@ -263,11 +263,17 @@ app.post("/api/auth/register", async (req, res) => {
   }
   const usernameBase = cleanUsername;
   const candidateEmail = `${usernameBase}@study2buddy.de`;
+  const universityEmail = String(linkedEmail || "").trim().toLowerCase();
+  const emailDomain = universityEmail.split("@")[1] || "";
+  const tenant = (db.tenants || []).find((entry) => entry.emailDomain === emailDomain);
+  if (!tenant) {
+    return res.status(400).json({ error: "Deine Uni-Mail-Domain ist noch nicht für StudFlow freigeschaltet." });
+  }
 
   const existingUser = db.users.find(
     (user) => user.email.toLowerCase() === candidateEmail
       || user.username.toLowerCase() === usernameBase.toLowerCase()
-      || (email && (user.linkedEmail ?? "").toLowerCase() === String(email).trim().toLowerCase())
+      || (universityEmail && (user.linkedEmail ?? "").toLowerCase() === universityEmail)
   );
 
   if (existingUser) {
@@ -280,6 +286,8 @@ app.post("/api/auth/register", async (req, res) => {
     name: cleanName,
     email: candidateEmail,
     internalEmail: candidateEmail,
+    linkedEmail: universityEmail,
+    tenantId: tenant.id,
     password: await bcrypt.hash(String(password), 12),
     major: major || "Informatik",
     semester: Number(semester || 1),
@@ -330,10 +338,12 @@ app.get("/api/admin/tenants", requireAdmin, (_, res) => {
 
 app.post("/api/admin/tenants", requireAdmin, (req, res) => {
   const name = String(req.body?.name || "").trim();
+  const emailDomain = String(req.body?.emailDomain || "").trim().toLowerCase().replace(/^@/, "");
   const id = normalizeTenantId(name);
-  if (!name || id === "study2buddy-demo") return res.status(400).json({ error: "Bitte einen gültigen Hochschulnamen angeben." });
+  if (!name || !/^[^@\s]+\.[^@\s]+$/.test(emailDomain) || id === "study2buddy-demo") return res.status(400).json({ error: "Bitte Hochschulname und gültige Uni-Mail-Domain angeben." });
+  if ((db.tenants || []).some((tenant) => tenant.emailDomain === emailDomain)) return res.status(409).json({ error: "Diese Uni-Mail-Domain existiert bereits." });
   if ((db.tenants || []).some((tenant) => tenant.id === id)) return res.status(409).json({ error: "Diese Hochschule existiert bereits." });
-  const tenant = { id, name };
+  const tenant = { id, name, emailDomain };
   db.tenants = [...(db.tenants || []), tenant];
   db = writeDb(db);
   res.status(201).json(tenant);

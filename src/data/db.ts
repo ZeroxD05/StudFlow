@@ -364,11 +364,11 @@ export async function listTenants() {
   return await response.json() as Tenant[];
 }
 
-export async function createTenant(name: string) {
+export async function createTenant(name: string, emailDomain: string) {
   const response = await fetch(`${SERVER_URL}/api/admin/tenants`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, emailDomain }),
   });
   if (!response.ok) throw new Error("Hochschule konnte nicht angelegt werden.");
   return await response.json() as Tenant;
@@ -484,6 +484,7 @@ export async function registerUser(input: {
   semester?: number;
   bio?: string;
   campus?: string;
+  linkedEmail?: string;
 }) {
   const name = input.name.trim();
   const username = sanitizeUsername(input.username);
@@ -518,7 +519,7 @@ export async function registerUser(input: {
   const registerResponse = await fetch(`${SERVER_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, username, password: input.password, major: input.major, semester: input.semester, bio: input.bio, campus: input.campus }),
+    body: JSON.stringify({ name, username, password: input.password, linkedEmail: input.linkedEmail, major: input.major, semester: input.semester, bio: input.bio, campus: input.campus }),
   });
   if (!registerResponse.ok) {
     const error = await registerResponse.json().catch(() => ({}));
