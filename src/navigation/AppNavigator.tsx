@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, PanResponder, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { createNavigationContainerRef, NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,7 +39,7 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function AppNavigator() {
   const { currentUserId, directMessages, users } = useAppDb();
   const currentUser = users.find((user) => user.id === currentUserId) ?? null;
-  const [notification, setNotification] = useState<{ id: string; account: string; text: string; profileImage?: string | null; avatarColor: string } | null>(null);
+  const [notification, setNotification] = useState<{ id: string; account: string; text: string; profileImage?: string | null; avatarColor: string; friendId: string | null } | null>(null);
   const previousMessageIds = useRef<Set<string> | null>(null);
   const previousUserId = useRef<string | null>(null);
   const notificationTranslateY = useRef(new Animated.Value(-140)).current;
@@ -97,6 +97,7 @@ export default function AppNavigator() {
       text: latest.message.text.length > 84 ? `${latest.message.text.slice(0, 84).trim()}...` : latest.message.text,
       profileImage: sender?.profileImage,
       avatarColor: sender?.avatarColor ?? colors.accent,
+      friendId: latest.threadId.startsWith("support:") ? "support-account" : sender?.id ?? null,
     });
     notificationTranslateY.stopAnimation();
     notificationTranslateY.setValue(-140);
@@ -112,6 +113,18 @@ export default function AppNavigator() {
       });
     }, 3600);
   }, [currentUser, currentUserId, directMessages, users]);
+
+  const openNotification = () => {
+    if (!notification?.friendId) {
+      return;
+    }
+
+    const friendId = notification.friendId;
+    Animated.timing(notificationTranslateY, { toValue: -140, duration: 240, useNativeDriver: true }).start(() => {
+      setNotification(null);
+      (navigationRef as any).navigate("Match", { friendId });
+    });
+  };
 
   return (
     <View style={styles.appRoot}>
@@ -168,18 +181,20 @@ export default function AppNavigator() {
       </Tab.Navigator>
       </NavigationContainer>
       {notification ? (
-        <Animated.View pointerEvents="none" style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
-          {notification.profileImage ? (
-            <Image source={{ uri: notification.profileImage }} style={styles.notificationAvatar} />
-          ) : (
-            <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>
-              <Text style={styles.notificationAvatarText}>{notification.account.charAt(0).toUpperCase()}</Text>
+        <Animated.View style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
+          <TouchableOpacity style={styles.notificationTouchable} onPress={openNotification} activeOpacity={0.85}>
+            {notification.profileImage ? (
+              <Image source={{ uri: notification.profileImage }} style={styles.notificationAvatar} />
+            ) : (
+              <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>
+                <Text style={styles.notificationAvatarText}>{notification.account.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationAccount} numberOfLines={1}>{notification.account}</Text>
+              <Text style={styles.notificationText} numberOfLines={1}>{notification.text}</Text>
             </View>
-          )}
-          <View style={styles.notificationContent}>
-            <Text style={styles.notificationAccount} numberOfLines={1}>{notification.account}</Text>
-            <Text style={styles.notificationText} numberOfLines={1}>{notification.text}</Text>
-          </View>
+          </TouchableOpacity>
         </Animated.View>
       ) : null}
     </View>
@@ -188,7 +203,8 @@ export default function AppNavigator() {
 
 const styles = StyleSheet.create({
   appRoot: { flex: 1 },
-  notificationBanner: { position: "absolute", top: 58, left: 16, right: 16, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
+  notificationBanner: { position: "absolute", top: 58, left: 16, right: 16, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
+  notificationTouchable: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 },
   notificationAvatar: { width: 38, height: 38, borderRadius: 19, marginRight: 10, alignItems: "center", justifyContent: "center" },
   notificationAvatarText: { color: colors.white, fontSize: 18, fontWeight: "800" },
   notificationContent: { flex: 1 },
