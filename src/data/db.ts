@@ -43,6 +43,7 @@ export type CampusDB = {
 
 const STORAGE_KEY = "studflow-db";
 const SESSION_KEY = "studflow-session-user-id-v2";
+const AUTH_TOKEN_KEY = "studflow-auth-token-v1";
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
 
 const defaultUser: CampusUser = {
@@ -100,6 +101,7 @@ export const createDefaultDB = (): CampusDB => ({
 
 let dbState: CampusDB = createDefaultDB();
 let localSessionUserId: string | null = null;
+let localAuthToken: string | null = null;
 const listeners = new Set<() => void>();
 let serverSocket: Socket | null = null;
 
@@ -124,6 +126,7 @@ function migrateLegacySchedule(state: CampusDB, userId: string | null): CampusDB
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const hashPassword = (password: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
+const authHeaders = (): Record<string, string> => localAuthToken ? { Authorization: `Bearer ${localAuthToken}` } : {};
 
 function ensureSocket() {
   if (!serverSocket) {
@@ -148,11 +151,14 @@ function ensureSocket() {
 }
 
 async function hydrateFromServer(): Promise<CampusDB | null> {
+  if (!localAuthToken) {
+    return null;
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
 
   try {
-    const response = await fetch(`${SERVER_URL}/api/db`, { signal: controller.signal });
+    const response = await fetch(`${SERVER_URL}/api/db`, { signal: controller.signal, headers: authHeaders() });
     if (!response.ok) {
       return null;
     }
@@ -178,6 +184,7 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
 
 export async function hydrateDb(): Promise<CampusDB> {
   localSessionUserId = await AsyncStorage.getItem(SESSION_KEY);
+  localAuthToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
   const serverState = await hydrateFromServer();
   if (serverState) {
     return serverState;
@@ -293,7 +300,7 @@ export function updateDb(mutator: (draft: CampusDB) => CampusDB, syncServer = tr
   if (syncServer) {
     fetch(`${SERVER_URL}/api/db`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(dbState),
     }).catch(() => {
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dbState)).catch(() => undefined);
@@ -318,8 +325,8 @@ export function saveCurrentUserSchedule(schedule: ScheduleItem[]) {
 
   fetch(`${SERVER_URL}/api/schedules`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: currentUserId, schedule }),
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ schedule }),
   }).catch(() => undefined);
 }
 
@@ -363,6 +370,20 @@ export async function loginUser(email: string, password: string) {
     }));
   }
 
+  const authResponse = await fetch(`${SERVER_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: user.email, password }),
+  });
+  if (!authResponse.ok) {
+    throw new Error("Die Serveranmeldung ist fehlgeschlagen.");
+  }
+  const authResult = await authResponse.json() as { token?: string };
+  if (!authResult.token) {
+    throw new Error("Kein gültiges Sitzungstoken erhalten.");
+  }
+  localAuthToken = authResult.token;
+  await AsyncStorage.setItem(AUTH_TOKEN_KEY, localAuthToken);
   localSessionUserId = user.id;
   await AsyncStorage.setItem(SESSION_KEY, user.id);
   updateDb((draft) => {
@@ -412,7 +433,7 @@ export async function registerUser(input: {
     throw new Error("Dieser Benutzername oder diese Mail ist bereits registriert.");
   }
 
-  const newUser: CampusUser = {
+  let newUser: CampusUser = {
     id: `user-${Date.now()}`,
     name,
     email: generatedEmail,
@@ -427,6 +448,22 @@ export async function registerUser(input: {
     username,
     showOnlineStatus: true,
   };
+
+  const registerResponse = await fetch(`${SERVER_URL}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, username, password: input.password, major: input.major, semester: input.semester, bio: input.bio, campus: input.campus }),
+  });
+  if (!registerResponse.ok) {
+    const error = await registerResponse.json().catch(() => ({}));
+    throw new Error(error?.error ?? "Die Registrierung am Server ist fehlgeschlagen.");
+  }
+  const registerResult = await registerResponse.json() as { user?: CampusUser; token?: string };
+  if (registerResult.user && registerResult.token) {
+    newUser = registerResult.user;
+    localAuthToken = registerResult.token;
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, localAuthToken);
+  }
 
   localSessionUserId = newUser.id;
   await AsyncStorage.setItem(SESSION_KEY, newUser.id);
@@ -449,7 +486,9 @@ export async function registerUser(input: {
 
 export function logoutUser() {
   localSessionUserId = null;
+  localAuthToken = null;
   void AsyncStorage.removeItem(SESSION_KEY);
+  void AsyncStorage.removeItem(AUTH_TOKEN_KEY);
   updateDb((draft) => ({ ...draft, currentUserId: null }));
 }
 
@@ -460,7 +499,9 @@ export function deleteCurrentUser() {
   }
 
   localSessionUserId = null;
+  localAuthToken = null;
   void AsyncStorage.removeItem(SESSION_KEY);
+  void AsyncStorage.removeItem(AUTH_TOKEN_KEY);
   updateDb((draft) => ({
     ...draft,
     currentUserId: null,
@@ -793,7 +834,7 @@ export function addCommentToPost(postId: string, text: string) {
 
   void fetch(`${SERVER_URL}/api/posts/${encodeURIComponent(postId)}/comments`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ userId: currentUser.id, text: trimmed }),
   }).catch(() => {
     void hydrateDb();
@@ -848,7 +889,7 @@ export async function deleteCommunityPost(postId: string) {
   try {
     const response = await fetch(`${SERVER_URL}/api/posts/${encodeURIComponent(postId)}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ userId: currentUser.id }),
     });
     if (!response.ok) {

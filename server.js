@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { Server } = require("socket.io");
@@ -17,6 +18,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 const cloudStateId = "main";
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:19006,http://localhost:8081").split(",").map((origin) => origin.trim()).filter(Boolean);
+const authSecret = process.env.AUTH_SECRET;
+if (!authSecret) {
+  throw new Error("AUTH_SECRET must be configured.");
+}
 
 const io = new Server(server, {
   cors: {
@@ -26,6 +31,30 @@ const io = new Server(server, {
 });
 
 const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const createAuthToken = (userId) => {
+  const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 })).toString("base64url");
+  const signature = crypto.createHmac("sha256", authSecret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+};
+const getAuthUser = (req) => {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  const expected = crypto.createHmac("sha256", authSecret).update(payload).digest("base64url");
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return data.exp > Date.now() ? db.users.find((user) => user.id === data.userId) ?? null : null;
+  } catch {
+    return null;
+  }
+};
+const requireAuth = (req, res, next) => {
+  const user = getAuthUser(req);
+  if (!user) return res.status(401).json({ error: "Authentifizierung erforderlich." });
+  req.authUser = user;
+  next();
+};
 
 const defaultDb = {
   currentUserId: null,
@@ -134,7 +163,7 @@ let db = readDb();
 const onlineUserIds = new Set();
 
 app.use(cors({
-  origin: true,
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json({ limit: "10mb" }));
@@ -148,6 +177,8 @@ app.get("/health", (_, res) => {
 });
 
 app.get("/api/db", (_, res) => {
+  const user = getAuthUser(_);
+  if (!user) return res.status(401).json({ error: "Authentifizierung erforderlich." });
   res.json(db);
 });
 
@@ -198,7 +229,7 @@ app.post("/api/auth/register", async (req, res) => {
   db.currentUserId = user.id;
   db = writeDb(db);
   emitDb();
-  res.status(201).json({ user, message: "Registrierung erfolgreich." });
+  res.status(201).json({ user, token: createAuthToken(user.id), message: "Registrierung erfolgreich." });
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -220,15 +251,15 @@ app.post("/api/auth/login", async (req, res) => {
   db.currentUserId = user.id;
   db = writeDb(db);
   emitDb();
-  res.json({ user, message: "Login erfolgreich." });
+  res.json({ user, token: createAuthToken(user.id), message: "Login erfolgreich." });
 });
 
-app.get("/api/users", (_, res) => {
+app.get("/api/users", requireAuth, (_, res) => {
   res.json(db.users);
 });
 
-app.patch("/api/schedules", (req, res) => {
-  const userId = String(req.body?.userId || "");
+app.patch("/api/schedules", requireAuth, (req, res) => {
+  const userId = req.authUser.id;
   const schedule = Array.isArray(req.body?.schedule) ? req.body.schedule : null;
   if (!userId || !db.users.some((user) => user.id === userId) || !schedule) {
     return res.status(400).json({ error: "Nutzer oder Stundenplan fehlt." });
@@ -240,7 +271,7 @@ app.patch("/api/schedules", (req, res) => {
   res.json({ ok: true });
 });
 
-app.patch("/api/db", (req, res) => {
+app.patch("/api/db", requireAuth, (req, res) => {
   const users = Array.isArray(req.body?.users) ? req.body.users : db.users;
   const seenUsernames = new Set();
   const seenUniversityEmails = new Set();
@@ -267,13 +298,13 @@ app.patch("/api/db", (req, res) => {
   res.json(db);
 });
 
-app.get("/api/posts", (_, res) => {
+app.get("/api/posts", requireAuth, (_, res) => {
   res.json(db.communityPosts);
 });
 
-app.post("/api/posts", (req, res) => {
-  const { content, authorId } = req.body || {};
-  const user = db.users.find((entry) => entry.id === authorId);
+app.post("/api/posts", requireAuth, (req, res) => {
+  const { content } = req.body || {};
+  const user = req.authUser;
   if (!user || !String(content || "").trim()) {
     return res.status(400).json({ error: "Inhalt oder Nutzer fehlt." });
   }
@@ -299,9 +330,8 @@ app.post("/api/posts", (req, res) => {
   res.status(201).json(post);
 });
 
-app.delete("/api/posts/:postId", (req, res) => {
-  const userId = String(req.body?.userId || "");
-  const user = db.users.find((entry) => entry.id === userId);
+app.delete("/api/posts/:postId", requireAuth, (req, res) => {
+  const user = req.authUser;
   const post = db.communityPosts.find((entry) => entry.id === req.params.postId);
   if (!user || !post) {
     return res.status(404).json({ error: "Beitrag oder Nutzer nicht gefunden." });
@@ -318,14 +348,14 @@ app.delete("/api/posts/:postId", (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/posts/:postId/comments", (req, res) => {
-  const { userId, text } = req.body || {};
+app.post("/api/posts/:postId/comments", requireAuth, (req, res) => {
+  const { text } = req.body || {};
   const post = db.communityPosts.find((entry) => entry.id === req.params.postId);
-  if (!post || !userId || !String(text || "").trim()) {
+  if (!post || !String(text || "").trim()) {
     return res.status(400).json({ error: "Kommentar oder Benutzer fehlt." });
   }
 
-  const user = db.users.find((entry) => entry.id === userId);
+  const user = req.authUser;
   const comment = {
     id: createId("comment"),
     authorId: user?.id,
@@ -342,20 +372,20 @@ app.post("/api/posts/:postId/comments", (req, res) => {
   res.status(201).json(comment);
 });
 
-app.get("/api/direct-messages", (_, res) => {
+app.get("/api/direct-messages", requireAuth, (_, res) => {
   res.json(db.directMessages || {});
 });
 
-app.post("/api/direct-messages", (req, res) => {
-  const { threadId, senderId, text } = req.body || {};
-  if (!threadId || !senderId || !String(text || "").trim()) {
+app.post("/api/direct-messages", requireAuth, (req, res) => {
+  const { threadId, text } = req.body || {};
+  if (!threadId || !String(text || "").trim()) {
     return res.status(400).json({ error: "Thread, Sender oder Text fehlen." });
   }
 
   const message = {
     id: createId("dm"),
-    senderId,
-    sender: senderId === db.currentUserId ? "me" : "match",
+    senderId: req.authUser.id,
+    sender: "me",
     text: String(text).trim(),
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
     createdAt: new Date().toISOString(),
