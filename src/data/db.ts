@@ -743,7 +743,7 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
         message,
       ],
     },
-  }));
+  }), false);
 
   void fetch(`${SERVER_URL}/api/direct-messages`, {
     method: "POST",
@@ -782,7 +782,7 @@ export function sendSupportMessage(text: string) {
         message,
       ],
     },
-  }));
+  }), false);
 
   void fetch(`${SERVER_URL}/api/direct-messages`, {
     method: "POST",
