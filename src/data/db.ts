@@ -430,6 +430,17 @@ export async function createManagedUser(input: { tenantId: string; name: string;
   return await response.json() as CampusUser;
 }
 
+export async function updateManagedUser(id: string, input: { name: string; linkedEmail: string; password?: string }) {
+  const response = await fetch(`${SERVER_URL}/api/admin/users/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(input) });
+  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error?.error ?? "Konto konnte nicht aktualisiert werden."); }
+  return await response.json() as CampusUser;
+}
+
+export async function deleteManagedUser(id: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/users/${encodeURIComponent(id)}`, { method: "DELETE", headers: authHeaders() });
+  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error?.error ?? "Konto konnte nicht gelöscht werden."); }
+}
+
 export const createTenantAdmin = (input: Omit<Parameters<typeof createManagedUser>[0], "role">) => createManagedUser({ ...input, role: "admin" });
 
 export async function listManagedUsers() {

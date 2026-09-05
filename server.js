@@ -457,6 +457,31 @@ app.get("/api/admin/users", requireAuth, (req, res) => {
   res.json(visibleUsers.map(({ password, ...user }) => user));
 });
 
+const canManageManagedUser = (actor, target) => actor.username === "ata" || (actor.tenantId === target.tenantId && actor.role === "admin" && target.role === "lecturer") || (actor.tenantId === target.tenantId && actor.role === "lecturer" && target.role === "student");
+
+app.patch("/api/admin/users/:userId", requireAuth, async (req, res) => {
+  const target = db.users.find((user) => user.id === req.params.userId);
+  if (!target || !canManageManagedUser(req.authUser, target)) return res.status(403).json({ error: "Keine Berechtigung für dieses Konto." });
+  const name = String(req.body?.name || "").trim();
+  const linkedEmail = String(req.body?.linkedEmail || "").trim().toLowerCase();
+  if (!name || !linkedEmail) return res.status(400).json({ error: "Name und Uni-Mail fehlen." });
+  target.name = name;
+  target.linkedEmail = linkedEmail;
+  if (req.body?.password) target.password = await bcrypt.hash(String(req.body.password), 12);
+  db = writeDb(db);
+  emitDb();
+  res.json(target);
+});
+
+app.delete("/api/admin/users/:userId", requireAuth, (req, res) => {
+  const target = db.users.find((user) => user.id === req.params.userId);
+  if (!target || !canManageManagedUser(req.authUser, target)) return res.status(403).json({ error: "Keine Berechtigung für dieses Konto." });
+  db.users = db.users.filter((user) => user.id !== target.id);
+  db = writeDb(db);
+  emitDb();
+  res.json({ ok: true });
+});
+
 app.patch("/api/schedules", requireAuth, (req, res) => {
   const userId = req.authUser.id;
   const schedule = Array.isArray(req.body?.schedule) ? req.body.schedule : null;

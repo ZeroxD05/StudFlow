@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createManagedUser, createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listManagedUsers, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
+import { createManagedUser, createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteManagedUser, deleteTenant, deleteUniversityNews, listManagedUsers, listTenants, logoutUser, updateCurrentUser, updateManagedUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -29,6 +29,8 @@ export default function ProfileScreen() {
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [managedFeedback, setManagedFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isCreatingManaged, setIsCreatingManaged] = useState(false);
+  const [editingManagedId, setEditingManagedId] = useState<string | null>(null);
+  const [managedEditForm, setManagedEditForm] = useState({ name: "", linkedEmail: "", password: "" });
   const isCentralAdmin = currentUser?.username === "ata";
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
@@ -397,6 +399,18 @@ export default function ProfileScreen() {
                       <Text style={styles.tenantMeta}>{managedUser.username} · {managedUser.linkedEmail ?? "Keine Uni-Mail"}</Text>
                     </View>
                     <Text style={styles.managedUserRole}>{managedUser.role === "lecturer" ? "Dozent" : managedUser.role === "admin" ? "Admin" : "Schüler"}</Text>
+                    <View style={styles.managedUserActions}>
+                      <TouchableOpacity onPress={() => { setEditingManagedId(managedUser.id); setManagedEditForm({ name: managedUser.name, linkedEmail: managedUser.linkedEmail ?? "", password: "" }); }}><Ionicons name="create-outline" size={18} color={colors.primary} /></TouchableOpacity>
+                      <TouchableOpacity onPress={async () => { await deleteManagedUser(managedUser.id); setManagedUsers((items) => items.filter((item) => item.id !== managedUser.id)); }}><Ionicons name="trash-outline" size={18} color="#C0392B" /></TouchableOpacity>
+                    </View>
+                    {editingManagedId === managedUser.id ? (
+                      <View style={styles.managedEditRow}>
+                        <TextInput value={managedEditForm.name} onChangeText={(value) => setManagedEditForm((current) => ({ ...current, name: value }))} placeholder="Name" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
+                        <TextInput value={managedEditForm.linkedEmail} onChangeText={(value) => setManagedEditForm((current) => ({ ...current, linkedEmail: value }))} placeholder="Uni-Mail" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" />
+                        <TextInput value={managedEditForm.password} onChangeText={(value) => setManagedEditForm((current) => ({ ...current, password: value }))} placeholder="Neues Passwort (optional)" placeholderTextColor={colors.textMuted} style={styles.adminInput} secureTextEntry />
+                        <TouchableOpacity style={styles.smallSaveButton} onPress={async () => { const updated = await updateManagedUser(managedUser.id, managedEditForm); setManagedUsers((items) => items.map((item) => item.id === managedUser.id ? { ...item, ...updated } : item)); setEditingManagedId(null); }}><Text style={styles.smallSaveText}>Speichern</Text></TouchableOpacity>
+                      </View>
+                    ) : null}
                   </View>
                 ))}
               </View>
@@ -768,6 +782,8 @@ const styles = StyleSheet.create({
   managedUserRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   managedUserInfo: { flex: 1, minWidth: 0 },
   managedUserRole: { color: colors.primary, fontSize: 11, fontWeight: "800" },
+  managedUserActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  managedEditRow: { width: "100%", marginTop: spacing.sm, gap: spacing.sm },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   adminHelpText: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
