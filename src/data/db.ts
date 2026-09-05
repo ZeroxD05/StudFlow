@@ -117,6 +117,7 @@ function withUserSchedule(state: CampusDB, userId: string | null): CampusDB {
   const scheduleByUserId = state.scheduleByUserId ?? {};
   return {
     ...state,
+    users: state.users.map((user) => ({ ...user, friendRequests: (user.friendRequests ?? []).filter((requesterId) => requesterId !== user.id) })),
     scheduleByUserId,
     todaySchedule: userId ? scheduleByUserId[userId] ?? [] : [],
   };
@@ -677,19 +678,20 @@ export function addFriend(friendId: string) {
 
 export function sendFriendRequest(friendId: string) {
   const currentUser = getCurrentUser();
-  if (!currentUser || !friendId) {
+  const recipient = dbState.users.find((user) => user.id === friendId);
+  if (!currentUser || !recipient || currentUser.id === recipient.id) {
     return null;
   }
 
-  if ((currentUser.friends ?? []).includes(friendId) || (currentUser.friendRequests ?? []).includes(friendId)) {
+  if ((currentUser.friends ?? []).includes(friendId) || (recipient.friendRequests ?? []).includes(currentUser.id)) {
     return currentUser;
   }
 
   updateDb((draft) => ({
     ...draft,
     users: draft.users.map((user) => {
-      if (user.id === currentUser.id) {
-        return { ...user, friendRequests: [...(user.friendRequests ?? []), friendId] };
+      if (user.id === friendId) {
+        return { ...user, friendRequests: [...new Set([...(user.friendRequests ?? []), currentUser.id])] };
       }
       return user;
     }),
