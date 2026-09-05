@@ -43,10 +43,10 @@ export default function AppNavigator() {
   const previousMessageIds = useRef<Set<string> | null>(null);
   const previousUserId = useRef<string | null>(null);
   const swipeResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
-    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
+    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
     onPanResponderRelease: (_, gesture) => {
-      if (!navigationRef.isReady() || Math.abs(gesture.dx) < 50) {
+      if (!navigationRef.isReady() || Math.abs(gesture.dx) < 30) {
         return;
       }
 
