@@ -62,7 +62,7 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
           </>
         ) : null}
       </View>
-      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+      <Animated.View style={[styles.swipeRowForeground, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
         <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
           {children}
         </TouchableOpacity>
@@ -461,7 +461,8 @@ const styles = StyleSheet.create({
   swipeActionRemove: { width: 76, backgroundColor: "#B7791F", alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionBlock: { width: 78, backgroundColor: "#C0392B", alignItems: "center", justifyContent: "center", gap: 3 },
   swipeActionText: { color: colors.white, fontSize: 10, fontWeight: "800" },
-  friendRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  swipeRowForeground: { backgroundColor: colors.background },
+  friendRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.background },
   friendAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   avatarText: { color: colors.white, fontSize: 20, fontWeight: "800" },
   friendInfo: { flex: 1, marginLeft: spacing.md },
