@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: spacing.lg,
     right: spacing.lg,
-    bottom: 76,
+    bottom: 86,
   },
   inputShell: {
     flex: 1,
