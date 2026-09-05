@@ -749,7 +749,14 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ threadId: getDirectMessageThreadId(currentUser.id, friendId), text: trimmed }),
-  }).catch(() => undefined);
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`DM konnte nicht synchronisiert werden (${response.status}).`);
+    }
+    await hydrateFromServer();
+  }).catch((error) => {
+    console.warn(error);
+  });
 
   return message;
 }
@@ -788,7 +795,14 @@ export function sendSupportMessage(text: string) {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ threadId: `support:${currentUser.id}`, text: trimmed }),
-  }).catch(() => undefined);
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Support-DM konnte nicht synchronisiert werden (${response.status}).`);
+    }
+    await hydrateFromServer();
+  }).catch((error) => {
+    console.warn(error);
+  });
 
   return message;
 }
