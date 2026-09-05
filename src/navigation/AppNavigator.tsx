@@ -80,7 +80,8 @@ export default function AppNavigator() {
             fontWeight: "800",
             minWidth: 18,
             height: 18,
-            lineHeight: 18,
+            lineHeight: 16,
+            paddingBottom: 2,
           },
         })}
       >
