@@ -12,7 +12,7 @@ export default function ProfileScreen() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isProfileDataOpen, setIsProfileDataOpen] = useState(false);
-  const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | null>(null);
+  const [legalPage, setLegalPage] = useState<"imprint" | "privacy" | "terms" | null>(null);
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
@@ -37,13 +37,14 @@ export default function ProfileScreen() {
 
   if (legalPage) {
     const isImprint = legalPage === "imprint";
+    const isTerms = legalPage === "terms";
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.legalHeader}>
           <TouchableOpacity style={styles.legalBackButton} onPress={() => setLegalPage(null)} hitSlop={8}>
             <Ionicons name="arrow-back" size={23} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.legalHeaderTitle}>{isImprint ? "Impressum" : "Datenschutzerklärung"}</Text>
+          <Text style={styles.legalHeaderTitle}>{isImprint ? "Impressum" : isTerms ? "Nutzungsbedingungen" : "Datenschutzerklärung"}</Text>
         </View>
         <ScrollView contentContainerStyle={styles.legalContent} showsVerticalScrollIndicator={false}>
           {isImprint ? (
@@ -56,6 +57,27 @@ export default function ProfileScreen() {
               <Text style={styles.legalHeading}>Verantwortlich für den Inhalt</Text>
               <Text style={styles.legalText}>Ata Zeran, Reclamstraße 4, 22111 Hamburg</Text>
             </>
+          ) : isTerms ? (
+            <>
+              <Text style={styles.legalTitle}>Nutzungsbedingungen</Text>
+              <Text style={styles.legalText}>Mit der Nutzung von StudFlow akzeptierst du diese Nutzungsbedingungen.</Text>
+              <Text style={styles.legalHeading}>Zweck der App</Text>
+              <Text style={styles.legalText}>StudFlow unterstützt dich bei Organisation, Stundenplanung, Community-Austausch und Direktnachrichten im Studienalltag.</Text>
+              <Text style={styles.legalHeading}>Konto und Zugang</Text>
+              <Text style={styles.legalText}>Du bist für die Richtigkeit deiner Kontodaten und für den Schutz deiner Zugangsdaten verantwortlich. Teile dein Passwort nicht mit anderen Personen.</Text>
+              <Text style={styles.legalHeading}>Faire Nutzung</Text>
+              <Text style={styles.legalText}>Behandle andere Nutzer respektvoll. Verboten sind insbesondere Belästigung, Bedrohungen, rechtswidrige Inhalte, Spam, Missbrauch von Konten und das unbefugte Auslesen oder Stören der App.</Text>
+              <Text style={styles.legalHeading}>Community und Nachrichten</Text>
+              <Text style={styles.legalText}>Beiträge und Nachrichten dürfen keine Rechte Dritter verletzen. Du kannst Personen blockieren, entfernen oder Benachrichtigungen stummschalten. Rechtswidrige oder gemeldete Inhalte können entfernt werden.</Text>
+              <Text style={styles.legalHeading}>Verfügbarkeit</Text>
+              <Text style={styles.legalText}>StudFlow wird nach Möglichkeit verfügbar gehalten. Ein Anspruch auf jederzeitige Verfügbarkeit, bestimmte Funktionen oder dauerhafte Speicherung besteht nicht.</Text>
+              <Text style={styles.legalHeading}>Konto löschen</Text>
+              <Text style={styles.legalText}>Du kannst dein Konto direkt in der App löschen. Gesetzliche Aufbewahrungspflichten und technisch notwendige Sicherungskopien können davon unberührt bleiben.</Text>
+              <Text style={styles.legalHeading}>Kontakt</Text>
+              <Text style={styles.legalText}>Ata Zeran{"\n"}ata2005hh@gmail.com</Text>
+              <Text style={styles.legalHeading}>Stand</Text>
+              <Text style={styles.legalText}>September 2026</Text>
+            </>
           ) : (
             <>
               <Text style={styles.legalTitle}>Datenschutzerklärung</Text>
@@ -67,7 +89,11 @@ export default function ProfileScreen() {
               <Text style={styles.legalHeading}>Zwecke und Speicherung</Text>
               <Text style={styles.legalText}>Die Daten werden zur Bereitstellung der App-Funktionen, zur Kontoverwaltung, zur Synchronisierung zwischen Geräten und zur Anzeige von Nachrichten und Stundenplan-Erinnerungen verarbeitet. Lokale Daten können auf dem Gerät gespeichert werden; synchronisierte Daten werden über den eingesetzten App-Server gespeichert.</Text>
               <Text style={styles.legalHeading}>Bildauswahl und externe Dienste</Text>
-              <Text style={styles.legalText}>Der Zugriff auf die Mediathek erfolgt nur, wenn du ein Profilbild auswählst. Für die technische Bereitstellung können Hosting-, Datenbank- und Netzwerkdienste eingesetzt werden.</Text>
+              <Text style={styles.legalText}>Der Zugriff auf die Mediathek erfolgt nur, wenn du ein Profilbild auswählst. Für die technische Bereitstellung werden folgende Dienste eingesetzt: Render für das Backend unter studflow.onrender.com und Supabase für die serverseitige Speicherung.</Text>
+              <Text style={styles.legalHeading}>Supabase-Konfiguration</Text>
+              <Text style={styles.legalText}>Die App verwendet ein Supabase-Projekt als serverseitige Datenbank. Gespeichert wird der zentrale StudFlow-Zustand in der Tabelle „studflow_state“ als JSON-Daten. Der Supabase-Service-Key wird ausschließlich serverseitig verwendet und nicht an die App ausgeliefert. Row Level Security ist für die Tabelle aktiviert; direkter Zugriff für anonyme und authentifizierte Datenbanknutzer ist deaktiviert.</Text>
+              <Text style={styles.legalHeading}>Hosting und Serverstandort</Text>
+              <Text style={styles.legalText}>Das Backend wird über Render bereitgestellt. Der konkrete Render-Standort und die Region des Supabase-Projekts sind in der App-Konfiguration nicht festgelegt und müssen in den jeweiligen Anbieter-Konten geprüft werden. Dein Wohnort in Hamburg bestimmt nicht automatisch den Serverstandort.</Text>
               <Text style={styles.legalHeading}>Deine Rechte</Text>
               <Text style={styles.legalText}>Du kannst Auskunft, Berichtigung oder Löschung deiner Daten verlangen. Wende dich dafür an ata2005hh@gmail.com. Dein Konto kannst du außerdem direkt in der App löschen.</Text>
               <Text style={styles.legalHeading}>Stand</Text>
@@ -290,6 +316,10 @@ export default function ProfileScreen() {
           <Text style={styles.legalLinkDivider}>·</Text>
           <TouchableOpacity onPress={() => setLegalPage("privacy")}>
             <Text style={styles.legalLink}>Datenschutzerklärung</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalLinkDivider}>·</Text>
+          <TouchableOpacity onPress={() => setLegalPage("terms")}>
+            <Text style={styles.legalLink}>Nutzungsbedingungen</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
