@@ -38,7 +38,8 @@ const io = new Server(server, {
 });
 
 const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-const normalizeTenantId = (value) => String(value || "study2buddy-demo").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "study2buddy-demo";
+const normalizeTenantId = (value) => String(value || "study2buddy-demo").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "study2buddy-demo";
+const findTenant = (tenantId) => (db.tenants || []).find((entry) => entry.id === tenantId || normalizeTenantId(entry.name) === tenantId);
 const createAuthToken = (userId, tenantId) => {
   const payload = Buffer.from(JSON.stringify({ userId, tenantId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 })).toString("base64url");
   const signature = crypto.createHmac("sha256", authSecret).update(payload).digest("base64url");
@@ -415,7 +416,7 @@ app.delete("/api/admin/news/:newsId", requireTenantAdmin, (req, res) => {
 
 app.post("/api/admin/users", requireAdmin, async (req, res) => {
   const { tenantId, name, username, linkedEmail, password } = req.body || {};
-  const tenant = (db.tenants || []).find((entry) => entry.id === tenantId);
+  const tenant = findTenant(tenantId);
   const missing = [
     !tenantId ? "Tenant-ID" : null,
     !name ? "Name" : null,
