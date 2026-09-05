@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
@@ -44,6 +44,18 @@ export default function MatchingScreen() {
       requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
     }
   }, [messages.length, selectedFriendId]);
+
+  useEffect(() => {
+    if (!selectedFriend || Platform.OS === "web") {
+      return;
+    }
+
+    const keyboardSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
+    });
+
+    return () => keyboardSubscription.remove();
+  }, [selectedFriendId]);
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined" || !window.visualViewport) {
