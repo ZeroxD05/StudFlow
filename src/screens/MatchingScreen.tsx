@@ -22,6 +22,7 @@ export default function MatchingScreen() {
   const [draft, setDraft] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
   const [chatActionsVisible, setChatActionsVisible] = useState(false);
+  const [webKeyboardOffset, setWebKeyboardOffset] = useState(0);
   const supportContact = db.users.find((user) => user.username.toLowerCase() === "ata") ?? {
     id: "support-account",
     name: "Ata",
@@ -43,6 +44,25 @@ export default function MatchingScreen() {
       requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
     }
   }, [messages.length, selectedFriendId]);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined" || !window.visualViewport) {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const updateKeyboardOffset = () => {
+      setWebKeyboardOffset(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
+    };
+
+    updateKeyboardOffset();
+    viewport.addEventListener("resize", updateKeyboardOffset);
+    viewport.addEventListener("scroll", updateKeyboardOffset);
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardOffset);
+      viewport.removeEventListener("scroll", updateKeyboardOffset);
+    };
+  }, []);
   const searchResult = searchEmail.trim().toLowerCase().endsWith("@study2buddy.de")
     ? db.users.find((user) =>
         user.id !== currentUser?.id
@@ -139,7 +159,10 @@ export default function MatchingScreen() {
             )}
           </ScrollView>
 
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "position" : Platform.OS === "android" ? "padding" : undefined}
+            style={Platform.OS === "web" && webKeyboardOffset > 0 ? { transform: [{ translateY: -webKeyboardOffset }] } : undefined}
+          >
             <View style={styles.composer}>
               <View style={styles.messageInputShell}>
                 <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
