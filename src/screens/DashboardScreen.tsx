@@ -84,6 +84,12 @@ export default function DashboardScreen({ navigation }: any) {
     year: "numeric",
   });
   const todaysSchedule = todaySchedule.filter((item) => item.day === todayName);
+  const toggleScheduleItemCompleted = (itemId: string) => {
+    updateDb((draft) => ({
+      ...draft,
+      todaySchedule: draft.todaySchedule.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
+    }));
+  };
   const selectedQuickLink = activeQuickLink ? quickLinkDetails[activeQuickLink] : null;
   const campusUrl = user?.campus
     ? `https://www.google.com/search?q=${encodeURIComponent(`Campus-Portal ${user.campus}`)}`
@@ -604,6 +610,11 @@ export default function DashboardScreen({ navigation }: any) {
                   <Text style={[typography.bodyStrong, item.completed && styles.scheduleTextCompleted]}>{item.course}</Text>
                   <Text style={[typography.caption, item.completed && styles.scheduleTextCompleted]}>{item.day} · {item.type} · {item.room}</Text>
                 </View>
+                <TouchableOpacity style={styles.dashboardCompletedToggle} onPress={() => toggleScheduleItemCompleted(item.id)} hitSlop={8}>
+                  <View style={[styles.dashboardCheckbox, item.completed && styles.dashboardCheckboxActive]}>
+                    {item.completed ? <Text style={styles.dashboardCheckmark}>✓</Text> : null}
+                  </View>
+                </TouchableOpacity>
               </View>
             ))
           )}
@@ -899,6 +910,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: spacing.sm,
     gap: spacing.sm,
+  },
+  dashboardCompletedToggle: {
+    marginLeft: spacing.sm,
+    padding: spacing.xs,
+  },
+  dashboardCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dashboardCheckboxActive: {
+    backgroundColor: colors.textMuted,
+    borderColor: colors.textMuted,
+  },
+  dashboardCheckmark: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "800",
   },
   scheduleRowBorder: {
     borderBottomWidth: 1,
