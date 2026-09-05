@@ -27,6 +27,8 @@ export default function ProfileScreen() {
   const [managedUsers, setManagedUsers] = useState<Array<{ id: string; name: string; username: string; linkedEmail?: string; role?: string }>>([]);
   const [adminFeedback, setAdminFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const [managedFeedback, setManagedFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isCreatingManaged, setIsCreatingManaged] = useState(false);
   const isCentralAdmin = currentUser?.username === "ata";
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
@@ -343,9 +345,15 @@ export default function ProfileScreen() {
                 {(["name", "username", "linkedEmail", "password"] as const).map((field) => (
                   <TextInput key={field} value={managedForm[field]} onChangeText={(value) => setManagedForm((current) => ({ ...current, [field]: value }))} placeholder={{ name: "Name", username: "Benutzername", linkedEmail: "Uni-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "name" && styles.adminFieldSpacing]} autoCapitalize="none" />
                 ))}
-                <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "lecturer" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); }}>
-                  <Text style={styles.primaryButtonText}>Dozent erstellen</Text>
+                <TouchableOpacity style={styles.primaryButton} onPress={async () => {
+                  setIsCreatingManaged(true); setManagedFeedback(null);
+                  try { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "lecturer" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); setManagedFeedback({ type: "success", text: "Dozent erfolgreich erstellt." }); }
+                  catch (error: any) { setManagedFeedback({ type: "error", text: error?.message ?? "Dozent konnte nicht erstellt werden." }); }
+                  finally { setIsCreatingManaged(false); }
+                }} disabled={isCreatingManaged}>
+                  <Text style={styles.primaryButtonText}>{isCreatingManaged ? "Wird erstellt ..." : "Dozent erstellen"}</Text>
                 </TouchableOpacity>
+                {managedFeedback ? <Text style={[styles.adminFeedback, managedFeedback.type === "error" ? styles.adminFeedbackError : styles.adminFeedbackSuccess]}>{managedFeedback.text}</Text> : null}
               </>
             ) : null}
             <>
@@ -436,9 +444,15 @@ export default function ProfileScreen() {
             {(["name", "username", "linkedEmail", "password"] as const).map((field) => (
               <TextInput key={field} value={managedForm[field]} onChangeText={(value) => setManagedForm((current) => ({ ...current, [field]: value }))} placeholder={{ name: "Name", username: "Benutzername", linkedEmail: "Uni-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "name" && styles.adminFieldSpacing]} autoCapitalize="none" />
             ))}
-            <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "student" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); }}>
-              <Text style={styles.primaryButtonText}>Schüler erstellen</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={async () => {
+              setIsCreatingManaged(true); setManagedFeedback(null);
+              try { await createManagedUser({ ...managedForm, tenantId: currentUser.tenantId ?? "", role: "student" }); setManagedForm({ name: "", username: "", linkedEmail: "", password: "" }); setManagedFeedback({ type: "success", text: "Schüler erfolgreich erstellt." }); }
+              catch (error: any) { setManagedFeedback({ type: "error", text: error?.message ?? "Schüler konnte nicht erstellt werden." }); }
+              finally { setIsCreatingManaged(false); }
+            }} disabled={isCreatingManaged}>
+              <Text style={styles.primaryButtonText}>{isCreatingManaged ? "Wird erstellt ..." : "Schüler erstellen"}</Text>
             </TouchableOpacity>
+            {managedFeedback ? <Text style={[styles.adminFeedback, managedFeedback.type === "error" ? styles.adminFeedbackError : styles.adminFeedbackSuccess]}>{managedFeedback.text}</Text> : null}
           </View>
         ) : null}
         <View style={styles.legalLinks}>
