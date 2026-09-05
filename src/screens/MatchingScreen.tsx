@@ -140,6 +140,11 @@ export default function MatchingScreen() {
               </View>
             ) : null}
           </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "web" ? undefined : "padding"}
+            keyboardVerticalOffset={Platform.OS === "web" ? 0 : 56}
+            style={[styles.chatContent, Platform.OS === "web" && webKeyboardOffset > 0 ? { transform: [{ translateY: -webKeyboardOffset }] } : undefined]}
+          >
           <ScrollView ref={messagesScrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {messages.length === 0 ? (
               <View style={styles.emptyChat}>
@@ -159,19 +164,14 @@ export default function MatchingScreen() {
             )}
           </ScrollView>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "position" : Platform.OS === "android" ? "padding" : undefined}
-            keyboardVerticalOffset={Platform.OS === "web" ? 0 : 56}
-            style={Platform.OS === "web" && webKeyboardOffset > 0 ? { transform: [{ translateY: -webKeyboardOffset }] } : undefined}
-          >
-            <View style={styles.composer}>
-              <View style={styles.messageInputShell}>
-                <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
-                <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
-                  <Ionicons name="send" size={16} color={colors.white} />
-                </TouchableOpacity>
-              </View>
+          <View style={styles.composer}>
+            <View style={styles.messageInputShell}>
+              <TextInput value={draft} onChangeText={setDraft} blurOnSubmit onSubmitEditing={sendMessage} placeholder="Nachricht schreiben" placeholderTextColor={colors.textMuted} style={styles.messageInput} />
+              <TouchableOpacity style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]} onPress={sendMessage} disabled={!draft.trim()} hitSlop={6}>
+                <Ionicons name="send" size={16} color={colors.white} />
+              </TouchableOpacity>
             </View>
+          </View>
           </KeyboardAvoidingView>
           </View>
         </View>
@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
   chatIdentity: { flex: 1, marginLeft: spacing.sm },
   chatName: { color: colors.textPrimary, fontWeight: "800", fontSize: 16 },
   chatStatus: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
+  chatContent: { flex: 1 },
   messages: { flex: 1 },
   messagesContent: { padding: spacing.lg, paddingBottom: spacing.md, flexGrow: 1 },
   emptyChat: { alignItems: "center", paddingTop: spacing.xxl },
