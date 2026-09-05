@@ -436,8 +436,14 @@ app.post("/api/admin/users", requireAuth, async (req, res) => {
   ].filter(Boolean);
   if (missing.length) return res.status(400).json({ error: `Fehlt: ${missing.join(", ")}.` });
   if (!tenant) return res.status(404).json({ error: `Tenant nicht gefunden: ${tenantId}` });
+  const normalizedLinkedEmail = String(linkedEmail).trim().toLowerCase();
+  const linkedDomain = normalizedLinkedEmail.split("@")[1] || "";
+  const isCentralAdmin = req.authUser.username === "ata";
+  if (!isCentralAdmin && linkedDomain !== tenant.emailDomain) {
+    return res.status(400).json({ error: `Die Mail muss zur Hochschul-Domain @${tenant.emailDomain} gehören.` });
+  }
   if (db.users.some((user) => user.username === username || user.linkedEmail === linkedEmail)) return res.status(409).json({ error: "Benutzername oder Uni-Mail existiert bereits." });
-  const user = { id: createId("user"), tenantId, role, name: String(name).trim(), username: String(username).trim().toLowerCase(), email: `${String(username).trim().toLowerCase()}@study2buddy.de`, internalEmail: `${String(username).trim().toLowerCase()}@study2buddy.de`, linkedEmail: String(linkedEmail).trim().toLowerCase(), password: await bcrypt.hash(String(password), 12), major: "", semester: 1, bio: "", avatarColor: "#1E4FD8", campus: tenant.name, friends: [], showOnlineStatus: true };
+  const user = { id: createId("user"), tenantId, role, name: String(name).trim(), username: String(username).trim().toLowerCase(), email: `${String(username).trim().toLowerCase()}@study2buddy.de`, internalEmail: `${String(username).trim().toLowerCase()}@study2buddy.de`, linkedEmail: normalizedLinkedEmail, password: await bcrypt.hash(String(password), 12), major: "", semester: 1, bio: "", avatarColor: "#1E4FD8", campus: tenant.name, friends: [], showOnlineStatus: true };
   db.users.push(user);
   db = writeDb(db);
   emitDb();
