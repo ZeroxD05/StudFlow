@@ -398,8 +398,15 @@ export default function ProfileScreen() {
               <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={{ tenantId: "Tenant-ID", name: "Name", username: "Benutzername", linkedEmail: "Admin-Mail", password: "Passwort" }[field]} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
             ))}
             <TouchableOpacity style={styles.primaryButton} onPress={async () => {
-              if (!adminForm.tenantId.trim() || !adminForm.name.trim() || !adminForm.username.trim() || !adminForm.linkedEmail.trim() || !adminForm.password.trim()) {
-                setAdminFeedback({ type: "error", text: "Bitte fülle Tenant-ID, Name, Benutzername, Admin-Mail und Passwort aus." });
+              const missingFields = [
+                !adminForm.tenantId.trim() ? "Tenant-ID" : null,
+                !adminForm.name.trim() ? "Name" : null,
+                !adminForm.username.trim() ? "Benutzername" : null,
+                !adminForm.linkedEmail.trim() ? "Admin-Mail" : null,
+                !adminForm.password.trim() ? "Passwort" : null,
+              ].filter(Boolean);
+              if (missingFields.length > 0) {
+                setAdminFeedback({ type: "error", text: `Fehlt: ${missingFields.join(", ")}.` });
                 return;
               }
               setIsCreatingAdmin(true);
