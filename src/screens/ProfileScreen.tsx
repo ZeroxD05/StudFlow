@@ -394,7 +394,19 @@ export default function ProfileScreen() {
             {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
               <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={field === "tenantId" ? "Tenant-ID" : field} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
             ))}
-            <TouchableOpacity style={styles.primaryButton} onPress={async () => { await createTenantAdmin(adminForm); setAdminForm({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" }); }}>
+            <TouchableOpacity style={styles.primaryButton} onPress={async () => {
+              if (!adminForm.tenantId.trim() || !adminForm.name.trim() || !adminForm.username.trim() || !adminForm.linkedEmail.trim() || !adminForm.password.trim()) {
+                Alert.alert("Fehlende Angaben", "Bitte fülle Tenant-ID, Name, Benutzername, Admin-Mail und Passwort aus.");
+                return;
+              }
+              try {
+                await createTenantAdmin(adminForm);
+                setAdminForm({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
+                Alert.alert("Uni-Admin erstellt", "Der Uni-Admin wurde erfolgreich angelegt und kann sich jetzt anmelden.");
+              } catch (error: any) {
+                Alert.alert("Uni-Admin konnte nicht erstellt werden", error?.message ?? "Bitte prüfe die Angaben und versuche es erneut.");
+              }
+            }}>
               <Text style={styles.primaryButtonText}>Uni-Admin erstellen</Text>
             </TouchableOpacity>
           </View>
