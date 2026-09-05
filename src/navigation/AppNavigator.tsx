@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { PanResponder, StyleSheet, Text, View } from "react-native";
+import { Animated, PanResponder, StyleSheet, Text, View } from "react-native";
 import { createNavigationContainerRef, NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +42,8 @@ export default function AppNavigator() {
   const [notification, setNotification] = useState<{ id: string; account: string; text: string } | null>(null);
   const previousMessageIds = useRef<Set<string> | null>(null);
   const previousUserId = useRef<string | null>(null);
+  const notificationTranslateY = useRef(new Animated.Value(-140)).current;
+  const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
     onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
@@ -94,8 +96,19 @@ export default function AppNavigator() {
       account: sender?.name ?? "Neue Nachricht",
       text: latest.message.text.length > 84 ? `${latest.message.text.slice(0, 84).trim()}...` : latest.message.text,
     });
-    const timeout = setTimeout(() => setNotification(null), 3600);
-    return () => clearTimeout(timeout);
+    notificationTranslateY.stopAnimation();
+    notificationTranslateY.setValue(-140);
+    Animated.timing(notificationTranslateY, { toValue: 0, duration: 360, useNativeDriver: true }).start();
+    if (notificationTimer.current) {
+      clearTimeout(notificationTimer.current);
+    }
+    notificationTimer.current = setTimeout(() => {
+      Animated.timing(notificationTranslateY, { toValue: -140, duration: 300, useNativeDriver: true }).start(({ finished }) => {
+        if (finished) {
+          setNotification(null);
+        }
+      });
+    }, 3600);
   }, [currentUser, currentUserId, directMessages, users]);
 
   return (
@@ -153,13 +166,13 @@ export default function AppNavigator() {
       </Tab.Navigator>
       </NavigationContainer>
       {notification ? (
-        <View pointerEvents="none" style={styles.notificationBanner}>
+        <Animated.View pointerEvents="none" style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
           <View style={styles.notificationDot} />
           <View style={styles.notificationContent}>
             <Text style={styles.notificationAccount} numberOfLines={1}>{notification.account}</Text>
             <Text style={styles.notificationText} numberOfLines={1}>{notification.text}</Text>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -167,7 +180,7 @@ export default function AppNavigator() {
 
 const styles = StyleSheet.create({
   appRoot: { flex: 1 },
-  notificationBanner: { position: "absolute", top: 14, left: 16, right: 16, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
+  notificationBanner: { position: "absolute", top: 58, left: 16, right: 16, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
   notificationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF5B6E", marginRight: 10 },
   notificationContent: { flex: 1 },
   notificationAccount: { color: colors.white, fontSize: 12, fontWeight: "800" },
