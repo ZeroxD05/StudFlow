@@ -908,12 +908,16 @@ const styles = StyleSheet.create({
   scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 58,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
   dashboardCompletedToggle: {
+    width: 32,
+    height: 32,
     marginLeft: spacing.sm,
-    padding: spacing.xs,
+    alignItems: "center",
+    justifyContent: "center",
   },
   dashboardCheckbox: {
     width: 24,
@@ -945,6 +949,7 @@ const styles = StyleSheet.create({
   },
   timeCol: {
     width: 52,
+    alignItems: "center",
   },
   timeText: {
     color: colors.primary,
