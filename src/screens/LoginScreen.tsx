@@ -243,6 +243,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: spacing.lg,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   brandWrap: {
     alignItems: "center",
