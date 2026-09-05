@@ -241,40 +241,6 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <View style={styles.activitySetting}>
-          <View style={styles.settingIcon}>
-            <Text style={styles.settingIconText}>•</Text>
-          </View>
-          <View style={styles.activitySettingText}>
-            <Text style={styles.sectionLabel}>STUNDENPLAN</Text>
-            <Text style={styles.activitySettingTitle}>Kurs-Erinnerungen</Text>
-            <Text style={styles.activitySettingHint}>Erinnert dich fünf Minuten vor dem Kurs an Fach, Raum und Uhrzeit.</Text>
-          </View>
-          <Switch
-            value={currentUser.scheduleRemindersEnabled !== false}
-            onValueChange={(value) => { updateCurrentUser({ scheduleRemindersEnabled: value }); }}
-            trackColor={{ false: colors.border, true: colors.success }}
-            thumbColor={colors.white}
-          />
-        </View>
-
-        <View style={styles.activitySetting}>
-          <View style={styles.settingIcon}>
-            <Text style={styles.settingIconText}>!</Text>
-          </View>
-          <View style={styles.activitySettingText}>
-            <Text style={styles.sectionLabel}>BENACHRICHTIGUNGEN</Text>
-            <Text style={styles.activitySettingTitle}>Alle Benachrichtigungen stummschalten</Text>
-            <Text style={styles.activitySettingHint}>Blendet alle ungelesenen DM-Hinweise in der App aus.</Text>
-          </View>
-          <Switch
-            value={currentUser.notificationsMuted === true}
-            onValueChange={(value) => { updateCurrentUser({ notificationsMuted: value }); }}
-            trackColor={{ false: colors.border, true: colors.accent }}
-            thumbColor={colors.white}
-          />
-        </View>
-
         <View style={styles.card}>
           <TouchableOpacity style={styles.sectionHeader} onPress={() => setIsProfileDataOpen((open) => !open)} activeOpacity={0.75}>
             <View style={styles.sectionHeaderText}>

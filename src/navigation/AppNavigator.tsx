@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, PanResponder, StyleSheet, TouchableOpacity, View } from "react-native";
 import { createNavigationContainerRef, NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { BottomTabBarProps, createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,7 +9,6 @@ import ScheduleImportScreen from "@/screens/ScheduleImportScreen";
 import GradesScreen from "@/screens/GradesScreen";
 import CommunityScreen from "@/screens/CommunityScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
-import { getUnreadDirectMessageCount, useAppDb } from "@/data/db";
 import { colors } from "@/theme/theme";
 
 const Tab = createBottomTabNavigator();
@@ -36,13 +35,7 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
   Profil: "settings",
 };
 
-const scheduleDays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-const getScheduleStart = (time: string) => {
-  const match = time.match(/^(\d{1,2}):(\d{2})/);
-  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
-};
-
-function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: BottomTabBarProps & { unreadMessages: number }) {
+function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const [barWidth, setBarWidth] = useState(0);
   const indicatorPosition = useRef(new Animated.Value(state.index)).current;
   const tabWidth = barWidth / state.routes.length;
@@ -68,7 +61,6 @@ function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: Bott
         const focused = state.index === index;
         const color = focused ? colors.primary : colors.textMuted;
         const iconName = focused ? icons[route.name] : `${icons[route.name]}-outline`;
-        const badge = route.name === "Match" && unreadMessages > 0 ? (unreadMessages > 99 ? "99+" : unreadMessages) : null;
 
         return (
           <TouchableOpacity
@@ -85,7 +77,6 @@ function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: Bott
             onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
           >
             <Ionicons name={iconName as keyof typeof Ionicons.glyphMap} size={24} color={color} />
-            {badge ? <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{badge}</Text></View> : null}
           </TouchableOpacity>
         );
       })}
@@ -94,29 +85,6 @@ function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: Bott
 }
 
 export default function AppNavigator() {
-  const { currentUserId, directMessages, users, todaySchedule } = useAppDb();
-  const currentUser = users.find((user) => user.id === currentUserId) ?? null;
-  const [notification, setNotification] = useState<{ id: string; kind: "dm" | "schedule"; account: string; text: string; profileImage?: string | null; avatarColor: string; friendId: string | null } | null>(null);
-  const previousMessageIds = useRef<Set<string> | null>(null);
-  const previousUserId = useRef<string | null>(null);
-  const remindedScheduleIds = useRef(new Set<string>());
-  const notificationTranslateY = useRef(new Animated.Value(-140)).current;
-  const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const notificationPanResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => gesture.dy < -6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-    onMoveShouldSetPanResponderCapture: (_, gesture) => gesture.dy < -6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-    onPanResponderMove: (_, gesture) => notificationTranslateY.setValue(Math.max(-140, Math.min(0, gesture.dy))),
-    onPanResponderRelease: (_, gesture) => {
-      if (gesture.dy < -30) {
-        if (notificationTimer.current) {
-          clearTimeout(notificationTimer.current);
-        }
-        Animated.timing(notificationTranslateY, { toValue: -140, duration: 240, useNativeDriver: true }).start(() => setNotification(null));
-        return;
-      }
-      Animated.spring(notificationTranslateY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
-    },
-  })).current;
   const swipeResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
     onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
@@ -137,111 +105,6 @@ export default function AppNavigator() {
       }
     },
   })).current;
-  const unreadMessages = currentUserId
-    ? Object.entries(directMessages).reduce((total, [threadId, messages]) => total + getUnreadDirectMessageCount(messages, currentUserId, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId))), 0)
-    : 0;
-
-  const presentNotification = (nextNotification: NonNullable<typeof notification>) => {
-    setNotification(nextNotification);
-    notificationTranslateY.stopAnimation();
-    notificationTranslateY.setValue(-140);
-    Animated.timing(notificationTranslateY, { toValue: 0, duration: 360, useNativeDriver: true }).start();
-    if (notificationTimer.current) {
-      clearTimeout(notificationTimer.current);
-    }
-    notificationTimer.current = setTimeout(() => {
-      Animated.timing(notificationTranslateY, { toValue: -140, duration: 300, useNativeDriver: true }).start(({ finished }) => {
-        if (finished) {
-          setNotification(null);
-        }
-      });
-    }, 3600);
-  };
-
-  useEffect(() => {
-    if (previousUserId.current !== currentUserId) {
-      previousUserId.current = currentUserId;
-      previousMessageIds.current = new Set(Object.values(directMessages).flat().map((message) => message.id));
-      return;
-    }
-
-    const previousIds = previousMessageIds.current ?? new Set<string>();
-    const incomingMessages = Object.entries(directMessages).flatMap(([threadId, messages]) => messages
-      .filter((message) => {
-        const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
-        const isMuted = Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId));
-        return currentUserId && isIncoming && !previousIds.has(message.id) && !isMuted;
-      })
-      .map((message) => ({ threadId, message })));
-
-    previousMessageIds.current = new Set(Object.values(directMessages).flat().map((message) => message.id));
-    const latest = incomingMessages[incomingMessages.length - 1];
-    if (!latest) {
-      return;
-    }
-
-    const sender = users.find((user) => user.id === latest.message.senderId);
-    presentNotification({
-      id: latest.message.id,
-      kind: "dm",
-      account: sender?.name ?? "Neue Nachricht",
-      text: latest.message.text.length > 84 ? `${latest.message.text.slice(0, 84).trim()}...` : latest.message.text,
-      profileImage: sender?.profileImage,
-      avatarColor: sender?.avatarColor ?? colors.accent,
-      friendId: latest.threadId.startsWith("support:") ? "support-account" : sender?.id ?? null,
-    });
-  }, [currentUser, currentUserId, directMessages, users]);
-
-  useEffect(() => {
-    if (!currentUser || currentUser.scheduleRemindersEnabled === false) {
-      return;
-    }
-
-    const checkScheduleReminders = () => {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const today = scheduleDays[now.getDay()];
-      const upcomingClass = todaySchedule.find((item) => {
-        const startMinutes = getScheduleStart(item.time);
-        return item.day === today && startMinutes !== null && currentMinutes >= startMinutes - 5 && currentMinutes < startMinutes;
-      });
-
-      const reminderKey = upcomingClass ? `${now.toDateString()}-${upcomingClass.id}` : "";
-      if (!upcomingClass || remindedScheduleIds.current.has(reminderKey)) {
-        return;
-      }
-
-      remindedScheduleIds.current.add(reminderKey);
-      const startTime = upcomingClass.time.match(/^\d{1,2}:\d{2}/)?.[0] ?? upcomingClass.time;
-      presentNotification({
-        id: `schedule-${upcomingClass.id}-${now.toDateString()}`,
-        kind: "schedule",
-        account: upcomingClass.course,
-        text: `${upcomingClass.room} · ${startTime}`,
-        avatarColor: colors.accent,
-        friendId: null,
-      });
-    };
-
-    checkScheduleReminders();
-    const interval = setInterval(checkScheduleReminders, 15000);
-    return () => clearInterval(interval);
-  }, [currentUser?.id, currentUser?.scheduleRemindersEnabled, todaySchedule]);
-
-  const openNotification = () => {
-    if (!notification?.friendId) {
-      return;
-    }
-
-    if (notification.kind !== "dm" || !notification.friendId) {
-      return;
-    }
-    const friendId = notification.friendId;
-    Animated.timing(notificationTranslateY, { toValue: -140, duration: 240, useNativeDriver: true }).start(() => {
-      setNotification(null);
-      (navigationRef as any).navigate("Match", { friendId });
-    });
-  };
 
   return (
     <View style={styles.appRoot}>
@@ -259,7 +122,7 @@ export default function AppNavigator() {
             backgroundColor: colors.background,
           },
         })}
-        tabBar={(props) => <AnimatedTabBar {...props} unreadMessages={unreadMessages} />}
+        tabBar={(props) => <AnimatedTabBar {...props} />}
       >
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
         <Tab.Screen name="Match" component={MatchingScreen} />
@@ -268,27 +131,6 @@ export default function AppNavigator() {
         <Tab.Screen name="Profil" component={ProfileScreen} />
       </Tab.Navigator>
       </NavigationContainer>
-      {notification ? (
-        <Animated.View {...notificationPanResponder.panHandlers} style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
-          <TouchableOpacity style={styles.notificationTouchable} onPress={openNotification} activeOpacity={0.85}>
-            {notification.kind === "schedule" ? (
-              <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>
-                <Ionicons name="calendar-outline" size={21} color={colors.white} />
-              </View>
-            ) : notification.profileImage ? (
-              <Image source={{ uri: notification.profileImage }} style={styles.notificationAvatar} />
-            ) : (
-              <View style={[styles.notificationAvatar, { backgroundColor: notification.avatarColor }]}>
-                <Text style={styles.notificationAvatarText}>{notification.account.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
-            <View style={styles.notificationContent}>
-              <Text style={styles.notificationAccount} numberOfLines={1}>{notification.account}</Text>
-              <Text style={styles.notificationText} numberOfLines={1}>{notification.text}</Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      ) : null}
     </View>
   );
 }
@@ -298,13 +140,4 @@ const styles = StyleSheet.create({
   tabBar: { height: 76, flexDirection: "row", alignItems: "center", paddingTop: 8, paddingBottom: 10, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border, shadowColor: "#0F2A5D", shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 6 },
   tabButton: { flex: 1, height: 58, alignItems: "center", justifyContent: "center", position: "relative" },
   tabIndicator: { position: "absolute", left: 0, bottom: 5, height: 4, borderRadius: 2, backgroundColor: colors.accent },
-  tabBadge: { position: "absolute", top: 4, right: "28%", minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, backgroundColor: "#D92D3F", alignItems: "center", justifyContent: "center" },
-  tabBadgeText: { color: colors.white, fontSize: 11, lineHeight: 13, fontWeight: "800", textAlign: "center" },
-  notificationBanner: { position: "absolute", top: 58, left: 16, right: 16, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
-  notificationTouchable: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 },
-  notificationAvatar: { width: 38, height: 38, borderRadius: 19, marginRight: 10, alignItems: "center", justifyContent: "center" },
-  notificationAvatarText: { color: colors.white, fontSize: 18, fontWeight: "800" },
-  notificationContent: { flex: 1 },
-  notificationAccount: { color: colors.white, fontSize: 12, fontWeight: "800" },
-  notificationText: { color: "rgba(255,255,255,0.9)", fontSize: 15, lineHeight: 20, marginTop: 2 },
 });
