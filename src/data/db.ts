@@ -105,15 +105,21 @@ let serverSocket: Socket | null = null;
 
 function withUserSchedule(state: CampusDB, userId: string | null): CampusDB {
   const scheduleByUserId = state.scheduleByUserId ?? {};
-  if (userId && !scheduleByUserId[userId] && state.todaySchedule.length > 0 && Object.keys(scheduleByUserId).length === 0) {
-    scheduleByUserId[userId] = state.todaySchedule;
-  }
-
   return {
     ...state,
     scheduleByUserId,
     todaySchedule: userId ? scheduleByUserId[userId] ?? [] : [],
   };
+}
+
+function migrateLegacySchedule(state: CampusDB, userId: string | null): CampusDB {
+  if (userId && Object.keys(state.scheduleByUserId ?? {}).length === 0 && state.todaySchedule.length > 0) {
+    return {
+      ...state,
+      scheduleByUserId: { [userId]: state.todaySchedule },
+    };
+  }
+  return state;
 }
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -152,7 +158,14 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
     }
 
     const parsed = (await response.json()) as CampusDB;
-    dbState = withUserSchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId);
+    dbState = withUserSchedule(migrateLegacySchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId), localSessionUserId);
+    if (localSessionUserId && Object.keys(parsed.scheduleByUserId ?? {}).length === 0 && parsed.todaySchedule?.length) {
+      void fetch(`${SERVER_URL}/api/db`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dbState),
+      }).catch(() => undefined);
+    }
     listeners.forEach((listener) => listener());
     ensureSocket();
     return dbState;
@@ -179,7 +192,7 @@ export async function hydrateDb(): Promise<CampusDB> {
     }
 
     const parsed = JSON.parse(raw) as CampusDB;
-    dbState = withUserSchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId);
+    dbState = withUserSchedule(migrateLegacySchedule({ ...createDefaultDB(), ...parsed, users: parsed.users ?? createDefaultDB().users, currentUserId: localSessionUserId }, localSessionUserId), localSessionUserId);
     listeners.forEach((listener) => listener());
     return dbState;
   } catch (error) {
@@ -333,7 +346,13 @@ export async function loginUser(email: string, password: string) {
 
   localSessionUserId = user.id;
   await AsyncStorage.setItem(SESSION_KEY, user.id);
-  updateDb((draft) => ({ ...draft, currentUserId: user.id }));
+  updateDb((draft) => {
+    const scheduleByUserId = draft.scheduleByUserId ?? {};
+    const migratedScheduleByUserId = Object.keys(scheduleByUserId).length === 0 && draft.todaySchedule.length > 0
+      ? { ...scheduleByUserId, [user.id]: draft.todaySchedule }
+      : scheduleByUserId;
+    return { ...draft, currentUserId: user.id, scheduleByUserId: migratedScheduleByUserId };
+  });
   return user;
 }
 
