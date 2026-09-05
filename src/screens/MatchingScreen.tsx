@@ -26,24 +26,35 @@ const formatMessageTime = (message: DirectMessage) => {
 
 function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted, onPress, allowContactActions = true }: { children: React.ReactNode; onBlock: () => void; onRemove: () => void; onToggleMute: () => void; isMuted: boolean; onPress: () => void; allowContactActions?: boolean }) {
   const translateX = useRef(new Animated.Value(0)).current;
+  const currentOffset = useRef(0);
+  const gestureStartOffset = useRef(0);
   const actionWidth = allowContactActions ? 230 : 76;
   const [isOpen, setIsOpen] = useState(false);
   const close = () => {
     setIsOpen(false);
+    currentOffset.current = 0;
     Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
   };
   const panResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.55,
     onPanResponderTerminationRequest: () => false,
-    onPanResponderMove: (_, gesture) => translateX.setValue(Math.max(0, Math.min(gesture.dx, actionWidth))),
+    onPanResponderGrant: () => {
+      gestureStartOffset.current = currentOffset.current;
+    },
+    onPanResponderMove: (_, gesture) => {
+      const nextOffset = Math.max(0, Math.min(gestureStartOffset.current + gesture.dx, actionWidth));
+      currentOffset.current = nextOffset;
+      translateX.setValue(nextOffset);
+    },
     onPanResponderRelease: (_, gesture) => {
-      const nextOpen = gesture.dx > 20;
+      const targetOffset = gesture.dx > 20 ? actionWidth : gesture.dx < -20 ? 0 : currentOffset.current;
+      const nextOpen = targetOffset === actionWidth;
+      currentOffset.current = targetOffset;
       setIsOpen(nextOpen);
-      Animated.spring(translateX, { toValue: nextOpen ? actionWidth : 0, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
+      Animated.spring(translateX, { toValue: targetOffset, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
     },
     onPanResponderTerminate: () => {
-      setIsOpen(false);
-      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
+      Animated.spring(translateX, { toValue: currentOffset.current, useNativeDriver: true, bounciness: 0, overshootClamping: true }).start();
     },
   })).current;
 
@@ -68,7 +79,7 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
         ) : null}
       </View>
       <Animated.View style={[styles.swipeRowForeground, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
-        <TouchableOpacity onPress={() => { if (isOpen) { close(); return; } onPress(); }} activeOpacity={0.75}>
+        <TouchableOpacity onPress={() => { if (isOpen || currentOffset.current > 0) { close(); return; } onPress(); }} activeOpacity={0.75}>
           {children}
         </TouchableOpacity>
       </Animated.View>
