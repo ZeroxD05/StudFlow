@@ -67,7 +67,7 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
         ) : null}
       </View>
       <Animated.View style={[styles.swipeRowForeground, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
-        <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+        <TouchableOpacity onPress={() => { if (isOpen) { close(); return; } onPress(); }} activeOpacity={0.75}>
           {children}
         </TouchableOpacity>
       </Animated.View>
