@@ -36,7 +36,8 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
     Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
   };
   const panResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.55,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.05,
+    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.05,
     onPanResponderTerminationRequest: () => false,
     onPanResponderGrant: () => {
       gestureStartOffset.current = currentOffset.current;
@@ -360,7 +361,7 @@ export default function MatchingScreen() {
         {searchEmail.length > 0 && !searchResult ? <Text style={styles.searchHint}>Keine passende freie App-Mail gefunden.</Text> : null}
         {searchResult ? <Text style={styles.searchSuccess}>{searchResult.name} gefunden. Tippe auf + zum Hinzufügen.</Text> : null}
       </View>
-      <ScrollView contentContainerStyle={styles.friendList} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.friendList} showsVerticalScrollIndicator={false} directionalLockEnabled>
         {friendRequests.length > 0 ? (
           <View style={styles.requestsSection}>
             <Text style={styles.requestsTitle}>Freundschaftsanfragen</Text>
