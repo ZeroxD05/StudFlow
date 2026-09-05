@@ -17,7 +17,14 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 const cloudStateId = "main";
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:19006,http://localhost:8081").split(",").map((origin) => origin.trim()).filter(Boolean);
+const configuredOrigins = (process.env.CORS_ORIGIN || "").split(",").map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = [...new Set([
+  "http://localhost:19006",
+  "http://localhost:8081",
+  "https://studflow.onrender.com",
+  "https://studflow-1.onrender.com",
+  ...configuredOrigins,
+])];
 const authSecret = process.env.AUTH_SECRET;
 if (!authSecret) {
   throw new Error("AUTH_SECRET must be configured.");
