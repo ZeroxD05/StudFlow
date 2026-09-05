@@ -34,6 +34,9 @@ export default function ScheduleImportScreen() {
   const [selectedDay, setSelectedDay] = useState<string>(weekDays[0]);
   const [entriesByDay, setEntriesByDay] = useState<Record<string, ScheduleEntryInput[]>>(createEmptyWeekMap());
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [dayScrollPosition, setDayScrollPosition] = useState(0);
+  const [dayContentWidth, setDayContentWidth] = useState(0);
+  const [dayViewportWidth, setDayViewportWidth] = useState(0);
 
   useEffect(() => {
     const next = createEmptyWeekMap();
@@ -114,7 +117,16 @@ export default function ScheduleImportScreen() {
         <Text style={typography.h1}>Stundenplan</Text>
         <Text style={[typography.body, { marginTop: 4 }]}>Mehrere Fächer pro Tag, einfach speichern und später bearbeiten.</Text>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow} directionalLockEnabled>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsRow}
+          directionalLockEnabled
+          scrollEventThrottle={16}
+          onScroll={(event) => setDayScrollPosition(event.nativeEvent.contentOffset.x)}
+          onContentSizeChange={(width) => setDayContentWidth(width)}
+          onLayout={(event) => setDayViewportWidth(event.nativeEvent.layout.width)}
+        >
           {weekDays.map((day) => (
             <TouchableOpacity
               key={day}
@@ -125,6 +137,17 @@ export default function ScheduleImportScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+        <View style={styles.dayScrollTrack}>
+          <View
+            style={[
+              styles.dayScrollThumb,
+              dayContentWidth > dayViewportWidth && {
+                width: `${Math.max(24, (dayViewportWidth / dayContentWidth) * 100)}%`,
+                left: `${Math.min(100 - Math.max(24, (dayViewportWidth / dayContentWidth) * 100), (dayScrollPosition / (dayContentWidth - dayViewportWidth)) * (100 - Math.max(24, (dayViewportWidth / dayContentWidth) * 100)))}%`,
+              },
+            ]}
+          />
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{selectedDay}</Text>
@@ -201,8 +224,24 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: "row",
     marginTop: spacing.lg,
-    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
     gap: 8,
+  },
+  dayScrollTrack: {
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    marginBottom: spacing.md,
+    overflow: "hidden",
+  },
+  dayScrollThumb: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: "24%",
+    backgroundColor: colors.primary,
+    borderRadius: 2,
   },
   dayTab: {
     width: 64,
