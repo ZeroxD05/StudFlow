@@ -164,8 +164,28 @@ const onlineUserIds = new Set();
 
 async function applySupportPassword() {
   const password = process.env.SUPPORT_PASSWORD;
-  const user = db.users.find((entry) => entry.username === "ata");
-  if (!password || !user) return;
+  if (!password) return;
+  let user = db.users.find((entry) => entry.username === "ata");
+  if (!user) {
+    user = {
+      id: "demo-user",
+      name: "Ata",
+      email: "ata2005hh@gmail.com",
+      internalEmail: "ata@study2buddy.de",
+      linkedEmail: "ata2005hh@gmail.com",
+      password: "",
+      major: "Informatik",
+      semester: 4,
+      bio: "Frontend- und Lern-Apps mit Fokus auf UX und Lernplattformen.",
+      avatarColor: "#7C6CFF",
+      campus: "Campus Nord",
+      profileImage: null,
+      username: "ata",
+      friends: [],
+      showOnlineStatus: true,
+    };
+    db.users.push(user);
+  }
   const matches = user.password.startsWith("$2") ? await bcrypt.compare(password, user.password) : user.password === password;
   if (!matches) {
     user.password = await bcrypt.hash(password, 12);
