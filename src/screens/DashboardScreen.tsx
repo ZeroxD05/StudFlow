@@ -595,14 +595,14 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           ) : (
             todaysSchedule.map((item, index) => (
-              <View key={item.id} style={[styles.scheduleRow, index !== todaysSchedule.length - 1 && styles.scheduleRowBorder]}>
+              <View key={item.id} style={[styles.scheduleRow, index !== todaysSchedule.length - 1 && styles.scheduleRowBorder, item.completed && styles.scheduleRowCompleted]}>
                 <View style={styles.timeCol}>
-                  <Text style={styles.timeText}>{item.time.split(" – ")[0]}</Text>
+                  <Text style={[styles.timeText, item.completed && styles.scheduleTextCompleted]}>{item.time.split(" – ")[0]}</Text>
                 </View>
-                <View style={styles.dot} />
+                <View style={[styles.dot, item.completed && styles.dotCompleted]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={typography.bodyStrong}>{item.course}</Text>
-                  <Text style={typography.caption}>{item.day} · {item.type} · {item.room}</Text>
+                  <Text style={[typography.bodyStrong, item.completed && styles.scheduleTextCompleted]}>{item.course}</Text>
+                  <Text style={[typography.caption, item.completed && styles.scheduleTextCompleted]}>{item.day} · {item.type} · {item.room}</Text>
                 </View>
               </View>
             ))
@@ -904,6 +904,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  scheduleRowCompleted: {
+    opacity: 0.58,
+  },
+  scheduleTextCompleted: {
+    color: colors.textMuted,
+  },
   timeCol: {
     width: 52,
   },
@@ -917,6 +923,9 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: colors.primary,
+  },
+  dotCompleted: {
+    backgroundColor: colors.textMuted,
   },
   matchCard: {
     backgroundColor: colors.primary,

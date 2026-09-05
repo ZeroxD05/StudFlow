@@ -30,6 +30,7 @@ export type ScheduleItem = {
   course: string;
   room: string;
   type: "Vorlesung" | "Übung" | "Seminar" | "Labor";
+  completed?: boolean;
 };
 
 export type BuddyProfile = {

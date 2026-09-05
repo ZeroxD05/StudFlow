@@ -13,6 +13,7 @@ type ScheduleEntryInput = {
   course: string;
   room: string;
   type: ScheduleItem["type"];
+  completed: boolean;
 };
 
 const createEmptyEntry = (): ScheduleEntryInput => ({
@@ -21,6 +22,7 @@ const createEmptyEntry = (): ScheduleEntryInput => ({
   course: "",
   room: "",
   type: "Vorlesung",
+  completed: false,
 });
 
 const createEmptyWeekMap = () =>
@@ -53,6 +55,7 @@ export default function ScheduleImportScreen() {
           course: item.course,
           room: item.room,
           type: item.type,
+          completed: item.completed === true,
         });
       });
     }
@@ -83,6 +86,13 @@ export default function ScheduleImportScreen() {
     }));
   };
 
+  const toggleEntryCompleted = (day: string, itemId: string) => {
+    setEntriesByDay((prev) => ({
+      ...prev,
+      [day]: (prev[day] ?? []).map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
+    }));
+  };
+
   const saveManualSchedule = () => {
     if (isSavingSchedule) {
       return;
@@ -100,6 +110,7 @@ export default function ScheduleImportScreen() {
             course: entry.course.trim(),
             room: entry.room.trim() || "Raum TBD",
             type: entry.type,
+            completed: entry.completed,
           }))
       );
 
@@ -158,7 +169,7 @@ export default function ScheduleImportScreen() {
             </View>
           ) : (
             currentEntries.map((entry) => (
-              <View key={entry.id} style={styles.entryCard}>
+              <View key={entry.id} style={[styles.entryCard, entry.completed && styles.entryCardCompleted]}>
                 <TextInput
                   value={entry.time}
                   onChangeText={(value) => updateEntry(selectedDay, entry.id, "time", value)}
@@ -180,6 +191,13 @@ export default function ScheduleImportScreen() {
                   placeholderTextColor={colors.textMuted}
                   style={styles.input}
                 />
+
+                <TouchableOpacity style={styles.completedToggle} onPress={() => toggleEntryCompleted(selectedDay, entry.id)}>
+                  <View style={[styles.completedCheckbox, entry.completed && styles.completedCheckboxActive]}>
+                    {entry.completed ? <Text style={styles.completedCheckmark}>✓</Text> : null}
+                  </View>
+                  <Text style={[styles.completedText, entry.completed && styles.completedTextActive]}>Erledigt</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -290,6 +308,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
+  entryCardCompleted: {
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border,
+  },
   input: {
     backgroundColor: "transparent",
     borderRadius: radius.sm,
@@ -301,6 +323,40 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     fontSize: 16,
     includeFontPadding: false,
+  },
+  completedToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  completedCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  completedCheckboxActive: {
+    backgroundColor: colors.textMuted,
+    borderColor: colors.textMuted,
+  },
+  completedCheckmark: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  completedText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  completedTextActive: {
+    color: colors.textMuted,
   },
   deleteButton: {
     alignSelf: "flex-end",
