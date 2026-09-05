@@ -330,8 +330,9 @@ export default function ProfileScreen() {
         </View>
         {currentUser.role === "admin" ? (
           <View style={styles.adminCard}>
-            <Text style={styles.sectionTitle}>Hochschulverwaltung</Text>
-            <Text style={styles.sectionDescription}>Lege getrennte Mandanten für Hochschulen an.</Text>
+            <Text style={styles.sectionTitle}>{isCentralAdmin ? "Hochschulverwaltung" : "News-Verwaltung"}</Text>
+            <Text style={styles.sectionDescription}>{isCentralAdmin ? "Lege getrennte Mandanten für Hochschulen an." : "Verwalte News für deine Hochschule."}</Text>
+            {isCentralAdmin ? <>
             <View style={styles.adminCreateRow}>
               <TextInput value={tenantName} onChangeText={setTenantName} placeholder="Name der Hochschule" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
               <TextInput value={tenantDomain} onChangeText={setTenantDomain} placeholder="uni.de" placeholderTextColor={colors.textMuted} style={styles.adminInput} autoCapitalize="none" />
@@ -360,16 +361,15 @@ export default function ProfileScreen() {
                 ) : null}
               </View>
             ))}
-            {!isCentralAdmin ? (
-              <>
+            </> : null}
+            <>
                 <Text style={styles.adminSubheading}>News veröffentlichen</Text>
                 <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
                 <TextInput value={newsBody} onChangeText={setNewsBody} placeholder="Nachricht der Hochschule" placeholderTextColor={colors.textMuted} style={[styles.adminInput, styles.newsAdminInput]} multiline />
                 <TouchableOpacity style={styles.primaryButton} onPress={async () => { if (!newsTitle.trim() || !newsBody.trim()) return; await createUniversityNews(newsTitle, newsBody); setNewsTitle(""); setNewsBody(""); }}>
                   <Text style={styles.primaryButtonText}>News veröffentlichen</Text>
                 </TouchableOpacity>
-              </>
-            ) : null}
+            </>
             {(db.tenantNews ?? []).map((news) => (
               <View key={news.id} style={styles.newsAdminRow}>
                 {editingNewsId === news.id ? (
@@ -393,6 +393,7 @@ export default function ProfileScreen() {
                 )}
               </View>
             ))}
+            {isCentralAdmin ? <>
             <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
             <Text style={styles.adminHelpText}>Dieses Formular erstellt das Admin-Konto direkt. Eine separate Registrierung ist danach nicht nötig. Die Admin-Mail darf von der Uni-Domain abweichen.</Text>
             {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
@@ -425,6 +426,7 @@ export default function ProfileScreen() {
               <Text style={styles.primaryButtonText}>{isCreatingAdmin ? "Wird erstellt ..." : "Uni-Admin erstellen"}</Text>
             </TouchableOpacity>
             {adminFeedback ? <Text style={[styles.adminFeedback, adminFeedback.type === "error" ? styles.adminFeedbackError : styles.adminFeedbackSuccess]}>{adminFeedback.text}</Text> : null}
+            </> : null}
           </View>
         ) : null}
         <View style={styles.legalLinks}>

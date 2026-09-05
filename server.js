@@ -79,6 +79,12 @@ const requireTenantAdmin = (req, res, next) => {
     next();
   });
 };
+const requireCentralAdmin = (req, res, next) => {
+  requireAuth(req, res, () => {
+    if (req.authUser.username !== "ata") return res.status(403).json({ error: "Nur der zentrale Admin darf Hochschulen verwalten." });
+    next();
+  });
+};
 
 const defaultDb = {
   currentUserId: null,
@@ -345,11 +351,11 @@ app.get("/api/users", requireAuth, (_, res) => {
   res.json(db.users);
 });
 
-app.get("/api/admin/tenants", requireAdmin, (_, res) => {
+app.get("/api/admin/tenants", requireCentralAdmin, (_, res) => {
   res.json(db.tenants || []);
 });
 
-app.post("/api/admin/tenants", requireAdmin, (req, res) => {
+app.post("/api/admin/tenants", requireCentralAdmin, (req, res) => {
   const name = String(req.body?.name || "").trim();
   const emailDomain = String(req.body?.emailDomain || "").trim().toLowerCase().replace(/^@/, "");
   const adminEmail = String(req.body?.adminEmail || "").trim().toLowerCase();
@@ -363,7 +369,7 @@ app.post("/api/admin/tenants", requireAdmin, (req, res) => {
   res.status(201).json(tenant);
 });
 
-app.patch("/api/admin/tenants/:tenantId", requireAdmin, (req, res) => {
+app.patch("/api/admin/tenants/:tenantId", requireCentralAdmin, (req, res) => {
   const tenant = (db.tenants || []).find((entry) => entry.id === req.params.tenantId);
   if (!tenant) return res.status(404).json({ error: "Hochschule nicht gefunden." });
   const adminEmail = String(req.body?.adminEmail || "").trim().toLowerCase();
@@ -373,7 +379,7 @@ app.patch("/api/admin/tenants/:tenantId", requireAdmin, (req, res) => {
   res.json(tenant);
 });
 
-app.delete("/api/admin/tenants/:tenantId", requireAdmin, (req, res) => {
+app.delete("/api/admin/tenants/:tenantId", requireCentralAdmin, (req, res) => {
   if (req.params.tenantId === "study2buddy-demo") return res.status(400).json({ error: "Der Default-Tenant kann nicht gelöscht werden." });
   if (!(db.tenants || []).some((entry) => entry.id === req.params.tenantId)) return res.status(404).json({ error: "Hochschule nicht gefunden." });
   db.tenants = db.tenants.filter((entry) => entry.id !== req.params.tenantId);
@@ -414,7 +420,7 @@ app.delete("/api/admin/news/:newsId", requireTenantAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/admin/users", requireAdmin, async (req, res) => {
+app.post("/api/admin/users", requireCentralAdmin, async (req, res) => {
   const { tenantId, name, username, linkedEmail, password } = req.body || {};
   const tenant = findTenant(tenantId);
   const missing = [
