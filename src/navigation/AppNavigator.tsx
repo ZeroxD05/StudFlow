@@ -44,6 +44,21 @@ export default function AppNavigator() {
   const previousUserId = useRef<string | null>(null);
   const notificationTranslateY = useRef(new Animated.Value(-140)).current;
   const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notificationPanResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => gesture.dy < -6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onMoveShouldSetPanResponderCapture: (_, gesture) => gesture.dy < -6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onPanResponderMove: (_, gesture) => notificationTranslateY.setValue(Math.max(-140, Math.min(0, gesture.dy))),
+    onPanResponderRelease: (_, gesture) => {
+      if (gesture.dy < -30) {
+        if (notificationTimer.current) {
+          clearTimeout(notificationTimer.current);
+        }
+        Animated.timing(notificationTranslateY, { toValue: -140, duration: 240, useNativeDriver: true }).start(() => setNotification(null));
+        return;
+      }
+      Animated.spring(notificationTranslateY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+    },
+  })).current;
   const swipeResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
     onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 0.8,
@@ -181,7 +196,7 @@ export default function AppNavigator() {
       </Tab.Navigator>
       </NavigationContainer>
       {notification ? (
-        <Animated.View style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
+        <Animated.View {...notificationPanResponder.panHandlers} style={[styles.notificationBanner, { transform: [{ translateY: notificationTranslateY }] }]}>
           <TouchableOpacity style={styles.notificationTouchable} onPress={openNotification} activeOpacity={0.85}>
             {notification.profileImage ? (
               <Image source={{ uri: notification.profileImage }} style={styles.notificationAvatar} />
