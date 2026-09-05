@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,12 +37,48 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function AppNavigator() {
   const { currentUserId, directMessages, users } = useAppDb();
   const currentUser = users.find((user) => user.id === currentUserId) ?? null;
+  const [notification, setNotification] = useState<{ id: string; account: string; text: string } | null>(null);
+  const previousMessageIds = useRef<Set<string> | null>(null);
+  const previousUserId = useRef<string | null>(null);
   const unreadMessages = currentUserId
     ? Object.entries(directMessages).reduce((total, [threadId, messages]) => total + getUnreadDirectMessageCount(messages, currentUserId, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId))), 0)
     : 0;
 
+  useEffect(() => {
+    if (previousUserId.current !== currentUserId) {
+      previousUserId.current = currentUserId;
+      previousMessageIds.current = new Set(Object.values(directMessages).flat().map((message) => message.id));
+      return;
+    }
+
+    const previousIds = previousMessageIds.current ?? new Set<string>();
+    const incomingMessages = Object.entries(directMessages).flatMap(([threadId, messages]) => messages
+      .filter((message) => {
+        const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
+        const isMuted = Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId));
+        return currentUserId && isIncoming && !previousIds.has(message.id) && !isMuted;
+      })
+      .map((message) => ({ threadId, message })));
+
+    previousMessageIds.current = new Set(Object.values(directMessages).flat().map((message) => message.id));
+    const latest = incomingMessages[incomingMessages.length - 1];
+    if (!latest) {
+      return;
+    }
+
+    const sender = users.find((user) => user.id === latest.message.senderId);
+    setNotification({
+      id: latest.message.id,
+      account: sender?.name ?? "Neue Nachricht",
+      text: latest.message.text.length > 84 ? `${latest.message.text.slice(0, 84).trim()}...` : latest.message.text,
+    });
+    const timeout = setTimeout(() => setNotification(null), 3600);
+    return () => clearTimeout(timeout);
+  }, [currentUser, currentUserId, directMessages, users]);
+
   return (
-    <NavigationContainer theme={navTheme}>
+    <View style={styles.appRoot}>
+      <NavigationContainer theme={navTheme}>
       <Tab.Navigator
         initialRouteName="Dashboard"
         screenOptions={({ route }) => ({
@@ -92,6 +129,25 @@ export default function AppNavigator() {
         <Tab.Screen name="Community" component={CommunityScreen} />
         <Tab.Screen name="Profil" component={ProfileScreen} />
       </Tab.Navigator>
-    </NavigationContainer>
+      </NavigationContainer>
+      {notification ? (
+        <View pointerEvents="none" style={styles.notificationBanner}>
+          <View style={styles.notificationDot} />
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationAccount} numberOfLines={1}>{notification.account}</Text>
+            <Text style={styles.notificationText} numberOfLines={1}>{notification.text}</Text>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  appRoot: { flex: 1 },
+  notificationBanner: { position: "absolute", top: 14, left: 16, right: 16, flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
+  notificationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF5B6E", marginRight: 10 },
+  notificationContent: { flex: 1 },
+  notificationAccount: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  notificationText: { color: "rgba(255,255,255,0.86)", fontSize: 13, marginTop: 2 },
+});

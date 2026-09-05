@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, getUnreadDirectMessageCount, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, toggleChatNotifications, useAppDb } from "@/data/db";
@@ -23,6 +23,53 @@ const formatMessageTime = (message: DirectMessage) => {
   const date = getMessageDate(message);
   return date ? date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : message.timestamp;
 };
+
+function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted, onPress, allowContactActions = true }: { children: React.ReactNode; onBlock: () => void; onRemove: () => void; onToggleMute: () => void; isMuted: boolean; onPress: () => void; allowContactActions?: boolean }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const actionWidth = allowContactActions ? 230 : 76;
+  const [isOpen, setIsOpen] = useState(false);
+  const close = () => {
+    setIsOpen(false);
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+  };
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+    onPanResponderMove: (_, gesture) => translateX.setValue(Math.max(0, Math.min(gesture.dx, actionWidth))),
+    onPanResponderRelease: (_, gesture) => {
+      const nextOpen = gesture.dx > 80;
+      setIsOpen(nextOpen);
+      Animated.spring(translateX, { toValue: nextOpen ? actionWidth : 0, useNativeDriver: true, bounciness: 0 }).start();
+    },
+  })).current;
+
+  return (
+    <View style={styles.swipeRowShell}>
+      <View style={styles.swipeActions}>
+        <TouchableOpacity style={styles.swipeActionMute} onPress={onToggleMute}>
+          <Ionicons name={isMuted ? "notifications-outline" : "notifications-off-outline"} size={16} color={colors.white} />
+          <Text style={styles.swipeActionText}>{isMuted ? "Laut" : "Stumm"}</Text>
+        </TouchableOpacity>
+        {allowContactActions ? (
+          <>
+            <TouchableOpacity style={styles.swipeActionRemove} onPress={onRemove}>
+              <Ionicons name="person-remove-outline" size={16} color={colors.white} />
+              <Text style={styles.swipeActionText}>Entfernen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.swipeActionBlock} onPress={onBlock}>
+              <Ionicons name="ban-outline" size={16} color={colors.white} />
+              <Text style={styles.swipeActionText}>Blockieren</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+      </View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function MatchingScreen() {
   const db = useAppDb();
@@ -140,6 +187,22 @@ export default function MatchingScreen() {
       return;
     }
     Alert.alert(label, `${selectedFriend.name} wirklich ${action === "remove" ? "entfernen" : "blockieren"}?`, [
+      { text: "Abbrechen", style: "cancel" },
+      { text: label, style: "destructive", onPress: execute },
+    ]);
+  };
+
+  const confirmFriendAction = (friend: typeof friends[number], action: "remove" | "block") => {
+    const label = action === "remove" ? "Freund entfernen" : "Blockieren";
+    const execute = () => {
+      if (action === "remove") removeFriend(friend.id);
+      if (action === "block") blockFriend(friend.id);
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`${label}: ${friend.name}?`)) execute();
+      return;
+    }
+    Alert.alert(label, `${friend.name} wirklich ${action === "remove" ? "entfernen" : "blockieren"}?`, [
       { text: "Abbrechen", style: "cancel" },
       { text: label, style: "destructive", onPress: execute },
     ]);
@@ -299,24 +362,29 @@ export default function MatchingScreen() {
             ))}
           </View>
         ) : null}
-        <TouchableOpacity style={styles.friendRow} onPress={() => setSelectedFriendId("support-account")} activeOpacity={0.75}>
-          <View style={[styles.friendAvatar, { backgroundColor: supportContact.avatarColor }]}>
-            <Text style={styles.avatarText}>A</Text>
-          </View>
-          <View style={styles.friendInfo}>
-            <View style={styles.friendTitleRow}>
-              <Text style={styles.friendName}>Ata</Text>
-              <View style={styles.onlineDot} />
+        <SwipeableFriendRow
+          onPress={() => setSelectedFriendId("support-account")}
+          onBlock={() => undefined}
+          onRemove={() => undefined}
+          onToggleMute={() => toggleChatNotifications(supportThreadId)}
+          isMuted={Boolean(currentUser?.mutedChatThreadIds?.includes(supportThreadId))}
+          allowContactActions={false}
+        >
+          <View style={styles.friendRow}>
+            <View style={[styles.friendAvatar, { backgroundColor: supportContact.avatarColor }]}>
+              <Text style={styles.avatarText}>A</Text>
             </View>
-            <Text style={styles.friendPreview}>StudFlow-Support</Text>
-          </View>
-          {supportUnreadCount > 0 ? (
-            <View style={styles.messageCountBadge}>
-              <Text style={styles.messageCountText}>{supportUnreadCount > 99 ? "99+" : supportUnreadCount}</Text>
+            <View style={styles.friendInfo}>
+              <View style={styles.friendTitleRow}>
+                <Text style={styles.friendName}>Ata</Text>
+                <View style={styles.onlineDot} />
+              </View>
+              <Text style={styles.friendPreview}>StudFlow-Support</Text>
             </View>
-          ) : null}
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+            {supportUnreadCount > 0 ? <View style={styles.messageCountBadge}><Text style={styles.messageCountText}>{supportUnreadCount > 99 ? "99+" : supportUnreadCount}</Text></View> : null}
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </SwipeableFriendRow>
         {friends.length === 0 ? (
           <View style={styles.emptyFriends}>
             <Ionicons name="people-outline" size={38} color={colors.primary} />
@@ -329,31 +397,36 @@ export default function MatchingScreen() {
           const threadId = getDirectMessageThreadId(currentUser?.id ?? "", friend.id);
           const unreadCount = getUnreadDirectMessageCount(friendMessages, currentUser?.id ?? null, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(threadId)));
           return (
-            <TouchableOpacity key={friend.id} style={styles.friendRow} onPress={() => setSelectedFriendId(friend.id)} activeOpacity={0.75}>
-              {friend.profileImage ? (
-                <Image source={{ uri: friend.profileImage }} style={styles.friendAvatar} />
-              ) : (
-                <View style={[styles.friendAvatar, { backgroundColor: friend.avatarColor }]}>
-                  <Text style={styles.avatarText}>{friend.name.charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-              <View style={styles.friendInfo}>
-                <View style={styles.friendTitleRow}>
-                  <Text style={styles.friendName}>{friend.name}</Text>
-                  {friend.online ? <View style={styles.onlineDot} /> : null}
-                </View>
-                <Text style={styles.friendPreview} numberOfLines={1}>{lastMessage?.text ?? "Tippen, um zu chatten"}</Text>
-              </View>
-              <View style={styles.friendMeta}>
-                {unreadCount > 0 ? (
-                  <View style={styles.messageCountBadge}>
-                    <Text style={styles.messageCountText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+            <SwipeableFriendRow
+              key={friend.id}
+              onPress={() => setSelectedFriendId(friend.id)}
+              onBlock={() => confirmFriendAction(friend, "block")}
+              onRemove={() => confirmFriendAction(friend, "remove")}
+              onToggleMute={() => toggleChatNotifications(threadId)}
+              isMuted={Boolean(currentUser?.mutedChatThreadIds?.includes(threadId))}
+            >
+              <View style={styles.friendRow}>
+                {friend.profileImage ? (
+                  <Image source={{ uri: friend.profileImage }} style={styles.friendAvatar} />
+                ) : (
+                  <View style={[styles.friendAvatar, { backgroundColor: friend.avatarColor }]}>
+                    <Text style={styles.avatarText}>{friend.name.charAt(0).toUpperCase()}</Text>
                   </View>
-                ) : null}
-                {lastMessage ? <Text style={styles.messageTime}>{lastMessage.timestamp}</Text> : null}
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                )}
+                <View style={styles.friendInfo}>
+                  <View style={styles.friendTitleRow}>
+                    <Text style={styles.friendName}>{friend.name}</Text>
+                    {friend.online ? <View style={styles.onlineDot} /> : null}
+                  </View>
+                  <Text style={styles.friendPreview} numberOfLines={1}>{lastMessage?.text ?? "Tippen, um zu chatten"}</Text>
+                </View>
+                <View style={styles.friendMeta}>
+                  {unreadCount > 0 ? <View style={styles.messageCountBadge}><Text style={styles.messageCountText}>{unreadCount > 99 ? "99+" : unreadCount}</Text></View> : null}
+                  {lastMessage ? <Text style={styles.messageTime}>{lastMessage.timestamp}</Text> : null}
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </View>
               </View>
-            </TouchableOpacity>
+            </SwipeableFriendRow>
           );
         })}
       </ScrollView>
@@ -382,6 +455,12 @@ const styles = StyleSheet.create({
   acceptButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.success, alignItems: "center", justifyContent: "center", marginLeft: spacing.xs },
   rejectButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.backgroundAlt, alignItems: "center", justifyContent: "center", marginLeft: spacing.xs },
   friendList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  swipeRowShell: { position: "relative", overflow: "hidden" },
+  swipeActions: { position: "absolute", left: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "stretch" },
+  swipeActionMute: { width: 76, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", gap: 3 },
+  swipeActionRemove: { width: 76, backgroundColor: "#B7791F", alignItems: "center", justifyContent: "center", gap: 3 },
+  swipeActionBlock: { width: 78, backgroundColor: "#C0392B", alignItems: "center", justifyContent: "center", gap: 3 },
+  swipeActionText: { color: colors.white, fontSize: 10, fontWeight: "800" },
   friendRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   friendAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   avatarText: { color: colors.white, fontSize: 20, fontWeight: "800" },
