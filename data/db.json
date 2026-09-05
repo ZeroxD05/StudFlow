@@ -1,103 +1,762 @@
 {
-  "currentUserId": "demo-user",
+  "currentUserId": null,
+  "tenants": [
+    {
+      "id": "study2buddy-demo",
+      "name": "Study2Buddy Demo"
+    }
+  ],
+  "tenantNews": [
+    {
+      "id": "news-1788607337780-pyl9g0",
+      "body": "Die Eröffnungsfeier findet um 12 Uhr statt. heute",
+      "title": "Eröffnungsfeier",
+      "tenantId": "test-universit-t-hamburg",
+      "createdAt": "2026-09-05T11:22:17.780Z"
+    }
+  ],
   "users": [
     {
       "id": "demo-user",
-      "name": "Ata",
-      "email": "ata2005hh@gmail.com",
-      "password": "Atailayda05",
-      "major": "Informatik",
-      "semester": 4,
       "bio": "Frontend- und App-Entwicklerin mit Fokus auf UX und Lernplattformen.",
-      "avatarColor": "#7C6CFF",
+      "name": "Ata",
+      "role": "admin",
+      "email": "ata2005hh@gmail.com",
+      "major": "Informatik",
       "campus": "Hochschule Flensburg",
-      "profileImage": null,
+      "friends": [
+        "user-1788546367446",
+        "user-1788549941266"
+      ],
+      "password": "$2b$12$5sMdNvc9UqKUYTr831AvI.60KE4191vfIRk/mxhkSnxRWQV6Jkw.a",
+      "semester": 4,
+      "tenantId": "study2buddy-demo",
       "username": "ata",
-      "internalEmail": "ata@study2buddy.de",
+      "avatarColor": "#7C6CFF",
       "linkedEmail": "ata2005hh@gmail.com",
+      "profileImage": null,
+      "internalEmail": "ata@study2buddy.de",
+      "friendRequests": [],
+      "showOnlineStatus": true,
+      "mutedChatThreadIds": [],
+      "notificationsMuted": false,
+      "scheduleRemindersEnabled": true
+    },
+    {
+      "id": "user-1788549941266",
+      "bio": "Frontend- und Lern-Apps mit Fokus auf UX.",
+      "name": "Amin",
+      "role": "student",
+      "email": "amin970@study2buddy.de",
+      "major": "Informatik",
+      "campus": "Campus Nord",
+      "friends": [
+        "demo-user"
+      ],
+      "password": "27585dda9b640bd4badddf0ba276c76197dedeaa775866288b920e9e00d61b57",
+      "semester": 4,
+      "tenantId": "study2buddy-demo",
+      "username": "amin970",
+      "avatarColor": "#7C6CFF",
+      "profileImage": null,
+      "internalEmail": "amin970@study2buddy.de",
+      "friendRequests": [],
       "showOnlineStatus": true
     },
     {
-      "id": "user-1788469301117",
-      "name": "Tom",
-      "email": "tom@study2buddy.de",
-      "internalEmail": "tom@study2buddy.de",
-      "password": "Atailayda05",
-      "major": "Informatik",
-      "semester": 4,
+      "id": "user-1788604908321-vy9r02",
       "bio": "Frontend- und Lern-Apps mit Fokus auf UX.",
-      "avatarColor": "#FF7A59",
-      "campus": "Hochschule Flensburg",
+      "name": "Ata",
+      "role": "student",
+      "email": "ata2005@study2buddy.de",
+      "major": "Informatik",
+      "campus": "Campus Nord",
+      "friends": [],
+      "password": "$2b$12$FnGtgugB9XnF503VOIUpLuO6tenvLSjuzPPdVFkmzsPqcMRbYLW9S",
+      "semester": 4,
+      "tenantId": "test-universit-t",
+      "username": "ata2005",
+      "avatarColor": "#FFC24B",
+      "linkedEmail": "ata@test-uni.de",
       "profileImage": null,
-      "username": "tom",
-      "linkedEmail": "tom@hochschule-flensburg.de"
+      "internalEmail": "ata2005@study2buddy.de",
+      "friendRequests": [],
+      "showOnlineStatus": true
     }
   ],
   "quickLinks": [
     {
       "id": "moodle",
-      "label": "Moodle",
+      "url": "https://moodle.org/",
       "icon": "book-outline",
-      "url": "https://moodle.org/"
+      "label": "Moodle"
     },
     {
       "id": "campus",
-      "label": "Campus-Portal",
+      "url": "https://www.studieren-in-hamburg.de/",
       "icon": "school-outline",
-      "url": "https://www.studieren-in-hamburg.de/"
+      "label": "Campus-Portal"
     },
     {
       "id": "mail",
-      "label": "Uni-Mail",
+      "url": "https://mail.google.com/",
       "icon": "mail-outline",
-      "url": "https://mail.google.com/"
+      "label": "Uni-Mail"
     },
     {
       "id": "library",
-      "label": "Bibliothek",
+      "url": "https://www.google.com/search?q=Universit%C3%A4tsbibliothek",
       "icon": "library-outline",
-      "url": "https://www.google.com/search?q=Universit%C3%A4tsbibliothek"
+      "label": "Bibliothek"
     },
     {
       "id": "cafeteria",
-      "label": "Mensaplan",
+      "url": "https://www.google.com/search?q=Mensaplan%20Hochschule%20Flensburg",
       "icon": "restaurant-outline",
-      "url": "https://www.google.com/search?q=Mensaplan%20Hochschule%20Flensburg"
+      "label": "Mensaplan"
     },
     {
       "id": "grades",
-      "label": "Noten",
+      "url": "https://www.google.com/search?q=Noten%20Informatik",
       "icon": "stats-chart-outline",
-      "url": "https://www.google.com/search?q=Noten%20Informatik"
+      "label": "Noten"
     }
   ],
   "todaySchedule": [],
+  "scheduleByUserId": {
+    "demo-user": [
+      {
+        "id": "entry-1788622497045-6456a04ea94388",
+        "day": "Samstag",
+        "room": "A1",
+        "time": "18:00 - 19:30",
+        "type": "Vorlesung",
+        "course": "Mathe",
+        "completed": false
+      }
+    ]
+  },
   "scheduleImage": null,
   "buddyProfiles": [],
   "jobListings": [],
-  "communityPosts": [],
+  "communityPosts": [
+    {
+      "id": "post-1788594270803",
+      "author": "Test",
+      "course": "Informatik",
+      "unread": 0,
+      "content": "was geht bei euch",
+      "timeAgo": "Jetzt",
+      "authorId": "user-1788546367446",
+      "comments": 5,
+      "threadName": "Test",
+      "avatarColor": "#FFC24B",
+      "commentsList": [
+        {
+          "id": "comment-1788594283210",
+          "me": true,
+          "text": "Test alter",
+          "author": "Ata",
+          "timestamp": "09:44"
+        },
+        {
+          "id": "comment-1788594398069-7nikwi",
+          "me": true,
+          "text": "Was geht bei dir",
+          "author": "Ata",
+          "timestamp": "07:46"
+        },
+        {
+          "id": "comment-1788594405216",
+          "me": true,
+          "text": "nicht viel",
+          "author": "Test",
+          "timestamp": "09:46"
+        },
+        {
+          "id": "comment-1788599796891-ritssx",
+          "me": true,
+          "text": "Hey",
+          "author": "Ata",
+          "authorId": "demo-user",
+          "timestamp": "09:16"
+        },
+        {
+          "id": "comment-1788600998770-jh4yln",
+          "me": true,
+          "text": "Nichts",
+          "author": "Ata",
+          "authorId": "demo-user",
+          "timestamp": "09:36"
+        }
+      ],
+      "profileImage": null
+    }
+  ],
   "gradeEntries": [],
   "directMessages": {
     "ata": [
       {
         "id": "support-1788468659520",
-        "sender": "me",
         "text": "Hi",
+        "sender": "me",
         "timestamp": "22:50"
       },
       {
         "id": "support-1788469335069",
-        "sender": "me",
         "text": "Hey",
+        "sender": "me",
         "timestamp": "23:02"
+      }
+    ],
+    "demo-user": [
+      {
+        "id": "dm-1788546397629",
+        "text": "hey",
+        "sender": "me",
+        "timestamp": "20:26"
+      }
+    ],
+    "support:demo-user": [
+      {
+        "id": "support-1788592251660",
+        "text": "Hey",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T07:10:51.661Z",
+        "timestamp": "09:10",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      }
+    ],
+    "user-1788546367446": [
+      {
+        "id": "dm-1788546443285",
+        "text": "Hey",
+        "sender": "me",
+        "timestamp": "20:27"
       }
     ],
     "support:user-1788469301117": [
       {
         "id": "support-1788469694791",
-        "sender": "me",
         "text": "Hey",
+        "sender": "me",
         "timestamp": "23:08"
+      }
+    ],
+    "dm:demo-user:user-1788546367446": [
+      {
+        "id": "dm-1788546757766",
+        "text": "hey",
+        "sender": "me",
+        "timestamp": "20:32",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788546765848",
+        "text": "hallo",
+        "sender": "me",
+        "timestamp": "20:32",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788546964549",
+        "text": "hey",
+        "sender": "me",
+        "timestamp": "20:36",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788546976274",
+        "text": "Hallo was geht",
+        "sender": "me",
+        "timestamp": "20:36",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547124117",
+        "text": "Hallo",
+        "sender": "me",
+        "timestamp": "20:38",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547128663",
+        "text": "hry",
+        "sender": "me",
+        "timestamp": "20:38",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547358511",
+        "text": "Hallo",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "20:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547364965",
+        "text": "wie gehts",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "timestamp": "20:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547373408",
+        "text": "Gut dir?",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "20:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788547379159",
+        "text": "auch danke lo",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "timestamp": "20:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788591548232",
+        "text": "Trst",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "08:59",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592065520",
+        "text": "Hey",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "09:07",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592414685",
+        "text": "boah was geht ab",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:13:34.685Z",
+        "timestamp": "09:13",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592423109",
+        "text": "alta",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:13:43.109Z",
+        "timestamp": "09:13",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592703181",
+        "text": "was geht",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:18:23.182Z",
+        "timestamp": "09:18",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592719229",
+        "text": "was machst du",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:18:39.230Z",
+        "timestamp": "09:18",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788592736159",
+        "text": "hey",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:18:56.160Z",
+        "timestamp": "09:18",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788593918583",
+        "text": "hey",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:38:38.584Z",
+        "timestamp": "09:38",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594002396",
+        "text": "test",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:40:02.397Z",
+        "timestamp": "09:40",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594011458",
+        "text": "test",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:40:11.459Z",
+        "timestamp": "09:40",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594017319",
+        "text": "hey",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:40:17.319Z",
+        "timestamp": "09:40",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594055640",
+        "text": "hallo",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:40:55.640Z",
+        "timestamp": "09:40",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594063096",
+        "text": "wmd",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:41:03.096Z",
+        "timestamp": "09:41",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594083602",
+        "text": "s",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:41:23.603Z",
+        "timestamp": "09:41",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594087923",
+        "text": "s",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:41:27.924Z",
+        "timestamp": "09:41",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594089474",
+        "text": "e",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:41:29.474Z",
+        "timestamp": "09:41",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594102963",
+        "text": "e",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:41:42.964Z",
+        "timestamp": "09:41",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594133510",
+        "text": "q",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:42:13.510Z",
+        "timestamp": "09:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594135638",
+        "text": "e",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:42:15.639Z",
+        "timestamp": "09:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594142636",
+        "text": "d",
+        "sender": "me",
+        "senderId": "user-1788546367446",
+        "createdAt": "2026-09-05T07:42:22.637Z",
+        "timestamp": "09:42",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788594512709",
+        "text": "Okay lol",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T07:48:32.710Z",
+        "timestamp": "09:48",
+        "readByUserIds": [
+          "demo-user",
+          "user-1788546367446"
+        ]
+      },
+      {
+        "id": "dm-1788599771581",
+        "text": "Hey",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T09:16:11.582Z",
+        "timestamp": "11:16",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788600145302",
+        "text": "Hallo",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T09:22:25.303Z",
+        "timestamp": "11:22",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788600744781-3673yq",
+        "text": "Na",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T09:32:24.897Z",
+        "timestamp": "09:32",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      }
+    ],
+    "dm:demo-user:user-1788549941266": [
+      {
+        "id": "dm-1788549990780",
+        "text": "Hey",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "21:26",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550041543",
+        "text": "Hallo",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:27",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550049650",
+        "text": "Wie gehts",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "21:27",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550054879",
+        "text": "Wie gehts wie stehts",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:27",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550057967",
+        "text": "Geilo",
+        "sender": "me",
+        "senderId": "demo-user",
+        "timestamp": "21:27",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550069963",
+        "text": "Mein study to buddy oder so",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:27",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550131737",
+        "text": ".",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:28",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550134337",
+        "text": "Y",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:28",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550136418",
+        "text": "Y",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:28",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788550138654",
+        "text": "Y",
+        "sender": "me",
+        "senderId": "user-1788549941266",
+        "timestamp": "21:28",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788592261806",
+        "text": "Test kurz um zu sehen ob das datum da auch steht",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T07:11:01.809Z",
+        "timestamp": "09:11",
+        "readByUserIds": [
+          "demo-user"
+        ]
+      },
+      {
+        "id": "dm-1788592264911",
+        "text": "Ja perfekt",
+        "sender": "me",
+        "senderId": "demo-user",
+        "createdAt": "2026-09-05T07:11:04.912Z",
+        "timestamp": "09:11",
+        "readByUserIds": [
+          "demo-user"
+        ]
       }
     ]
   }

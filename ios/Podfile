@@ -1,11 +1,3 @@
-if defined?(Pod::Specification) && !Pod::Specification.method_defined?(:visionos)
-  Pod::Specification.class_eval do
-    def visionos
-      self
-    end
-  end
-end
-
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 

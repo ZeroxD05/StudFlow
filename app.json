@@ -15,16 +15,19 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.study2buddy.studflow",
+      "bundleIdentifier": "com.studflow",
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Damit du Bilder für dein Profil hochladen kannst.",
         "NSPhotoLibraryUsageDescription": "Damit du Profilbilder auswählen kannst.",
-        "NSLocalNetworkUsageDescription": "StudFlow verbindet sich während der Entwicklung mit dem lokalen Expo-Server."
+        "NSLocalNetworkUsageDescription": "StudFlow verbindet sich während der Entwicklung mit dem lokalen Expo-Server.",
+        "NSBonjourServices": [
+          "_http._tcp"
+        ]
       }
     },
     "android": {
-      "package": "com.study2buddy.studflow",
+      "package": "com.studflow",
       "versionCode": 1,
       "permissions": [
         "INTERNET",
@@ -38,7 +41,18 @@
       "themeColor": "#0B1120"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#7C6CFF"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8207a86d-2af4-41f4-a8c4-fb893fa3af66"
+      }
+    }
   }
 }

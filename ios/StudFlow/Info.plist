@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>studflow</string>
-          <string>com.study2buddy.studflow</string>
+          <string>com.studflow</string>
         </array>
       </dict>
     </array>
@@ -47,6 +47,10 @@
     <string>Damit du Bilder für dein Profil hochladen kannst.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>StudFlow verbindet sich während der Entwicklung mit dem lokalen Expo-Server.</string>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_http._tcp</string>
+    </array>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>

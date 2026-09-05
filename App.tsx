@@ -5,7 +5,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import AppNavigator from "@/navigation/AppNavigator";
 import LoginScreen from "@/screens/LoginScreen";
 import { hydrateDb, useAppDb } from "@/data/db";
+import { configureNotificationHandler } from "@/data/notifications";
 import { colors } from "@/theme/theme";
+
+configureNotificationHandler();
 
 export default function App() {
   const [ready, setReady] = useState(false);

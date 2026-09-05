@@ -105,6 +105,7 @@ export type CampusUser = {
   notificationsMuted?: boolean;
   mutedChatThreadIds?: string[];
   scheduleRemindersEnabled?: boolean;
+  pushTokens?: string[];
 };
 
 export type Tenant = {

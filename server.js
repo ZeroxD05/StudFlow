@@ -203,6 +203,67 @@ function emitDb() {
 let db = readDb();
 const onlineUserIds = new Set();
 
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+const isExpoPushToken = (token) => typeof token === "string" && /^ExponentPushToken\[.+\]$|^ExpoPushToken\[.+\]$/.test(token);
+
+async function sendExpoPush(messages) {
+  const valid = messages.filter((message) => isExpoPushToken(message.to));
+  if (!valid.length) return;
+
+  try {
+    const response = await fetch(EXPO_PUSH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(valid),
+    });
+    const result = await response.json().catch(() => ({}));
+    const tickets = Array.isArray(result?.data) ? result.data : [];
+    tickets.forEach((ticket, index) => {
+      if (ticket?.status === "error") {
+        console.warn(`Push an ${valid[index]?.to} fehlgeschlagen: ${ticket.message ?? "Unbekannter Fehler"}`);
+        if (ticket.details?.error === "DeviceNotRegistered") {
+          removePushTokenEverywhere(valid[index]?.to);
+        }
+      }
+    });
+  } catch (error) {
+    console.warn(`Expo-Push-Versand fehlgeschlagen: ${error?.message ?? error}`);
+  }
+}
+
+function removePushTokenEverywhere(token) {
+  if (!token) return;
+  let changed = false;
+  db.users = db.users.map((user) => {
+    if (!user.pushTokens?.includes(token)) return user;
+    changed = true;
+    return { ...user, pushTokens: user.pushTokens.filter((entry) => entry !== token) };
+  });
+  if (changed) {
+    db = writeDb(db);
+  }
+}
+
+async function notifyDirectMessageRecipient(threadId, message) {
+  const recipientId = String(threadId).split(":").filter((part) => part && part !== "dm" && part !== message.senderId)[0];
+  const recipient = db.users.find((user) => user.id === recipientId);
+  if (!recipient || recipient.notificationsMuted) return;
+  if ((recipient.mutedChatThreadIds ?? []).includes(threadId)) return;
+
+  const sender = db.users.find((user) => user.id === message.senderId);
+  const tokens = [...new Set(recipient.pushTokens ?? [])];
+  if (!tokens.length) return;
+
+  await sendExpoPush(tokens.map((token) => ({
+    to: token,
+    sound: "default",
+    title: sender?.name ?? "Neue Nachricht",
+    body: message.text,
+    data: { threadId, senderId: message.senderId },
+  })));
+}
+
 async function applySupportPassword() {
   const password = process.env.SUPPORT_PASSWORD;
   if (!password) return;
@@ -620,6 +681,28 @@ app.get("/api/direct-messages", requireAuth, (_, res) => {
   res.json(db.directMessages || {});
 });
 
+app.post("/api/push-token", requireAuth, (req, res) => {
+  const token = String(req.body?.token ?? "").trim();
+  if (!isExpoPushToken(token)) {
+    return res.status(400).json({ error: "Ungültiger Expo-Push-Token." });
+  }
+
+  const user = db.users.find((entry) => entry.id === req.authUser.id);
+  if (!user) {
+    return res.status(404).json({ error: "Nutzer nicht gefunden." });
+  }
+
+  user.pushTokens = [...new Set([...(user.pushTokens ?? []), token])];
+  db = writeDb(db);
+  res.status(201).json({ ok: true });
+});
+
+app.delete("/api/push-token", requireAuth, (req, res) => {
+  const token = String(req.body?.token ?? "").trim();
+  removePushTokenEverywhere(token);
+  res.json({ ok: true });
+});
+
 app.post("/api/direct-messages", requireAuth, (req, res) => {
   const { threadId, text } = req.body || {};
   if (!threadId || !String(text || "").trim()) {
@@ -643,6 +726,7 @@ app.post("/api/direct-messages", requireAuth, (req, res) => {
   db.directMessages[threadId] = [...(db.directMessages[threadId] || []), message];
   db = writeDb(db);
   emitDb();
+  void notifyDirectMessageRecipient(threadId, message);
   res.status(201).json(message);
 });
 

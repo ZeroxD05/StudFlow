@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0B1120" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CampusOS" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>StudFlow</title>
+    <style>
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        background: #0b1120;
+      }
+
+      #root {
+        display: flex;
+        flex: 1;
+      }
+
+      body {
+        overflow: auto;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      @supports (height: 100dvh) {
+        html, body, #root {
+          height: 100dvh;
+          min-height: 100dvh;
+        }
+      }
+    </style>
+  <meta name="theme-color" content="#0B1120">
+<link rel="shortcut icon" href="/favicon.ico" /></head>
+  <body>
+    <div id="root"></div>
+  <script src="/_expo/static/js/web/AppEntry-b6e07589e8eac61f0d81d13f0eb73a7c.js" defer></script>
+</body>
+</html>

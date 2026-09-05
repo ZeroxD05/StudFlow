@@ -1,7 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
+import * as Notifications from "expo-notifications";
+import { AppState } from "react-native";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { registerForPushToken } from "@/data/notifications";
 import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, QuickLink, ScheduleItem, Tenant, UniversityNews } from "@/types";
 
 export type CampusUser = {
@@ -27,6 +30,7 @@ export type CampusUser = {
   notificationsMuted?: boolean;
   mutedChatThreadIds?: string[];
   scheduleRemindersEnabled?: boolean;
+  pushTokens?: string[];
 };
 
 export type CampusDB = {
@@ -146,7 +150,9 @@ function ensureSocket() {
     });
 
     serverSocket.on("db:update", (nextState: CampusDB) => {
+      const previousMessages = dbState.directMessages;
       dbState = withUserSchedule({ ...nextState, currentUserId: localSessionUserId }, localSessionUserId);
+      notifyNewDirectMessages(previousMessages, dbState);
       listeners.forEach((listener) => listener());
     });
 
@@ -157,6 +163,83 @@ function ensureSocket() {
   }
 
   return serverSocket;
+}
+
+const findSenderName = (state: CampusDB, message: DirectMessage) => {
+  const sender = state.users.find((user) => user.id === message.senderId);
+  return sender?.name ?? "StudFlow";
+};
+
+// Lokale Benachrichtigung, wenn die App geöffnet ist und eine neue ungelesene DM ankommt.
+// System-Push bei geschlossener App übernimmt der Server über den Expo Push Service.
+function notifyNewDirectMessages(previous: Record<string, DirectMessage[]>, next: CampusDB) {
+  const currentUser = next.users.find((user) => user.id === next.currentUserId);
+  if (!currentUser || currentUser.notificationsMuted || AppState.currentState !== "active") {
+    return;
+  }
+
+  const mutedThreadIds = new Set(currentUser.mutedChatThreadIds ?? []);
+  for (const [threadId, messages] of Object.entries(next.directMessages ?? {})) {
+    if (!threadId.includes(currentUser.id) || mutedThreadIds.has(threadId)) {
+      continue;
+    }
+
+    const previousIds = new Set((previous[threadId] ?? []).map((message) => message.id));
+    const incoming = messages.filter((message) =>
+      !previousIds.has(message.id) &&
+      message.senderId !== currentUser.id &&
+      !(message.readByUserIds ?? []).includes(currentUser.id)
+    );
+
+    for (const message of incoming) {
+      void Notifications.scheduleNotificationAsync({
+        content: {
+          title: findSenderName(next, message),
+          body: message.text,
+          data: { threadId },
+        },
+        trigger: null,
+      }).catch((error) => console.warn("Lokale Benachrichtigung fehlgeschlagen.", error));
+    }
+  }
+}
+
+export async function syncPushTokenToServer() {
+  if (!localAuthToken) {
+    return;
+  }
+
+  const token = await registerForPushToken();
+  if (!token) {
+    return;
+  }
+
+  try {
+    await fetch(`${SERVER_URL}/api/push-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ token }),
+    });
+  } catch (error) {
+    console.warn("Push-Token konnte nicht gespeichert werden.", error);
+  }
+}
+
+async function removePushTokenFromServer() {
+  if (!localAuthToken) {
+    return;
+  }
+
+  try {
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    await fetch(`${SERVER_URL}/api/push-token`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    // Best effort: Abmeldung darf nie fehlschlagen.
+  }
 }
 
 async function hydrateFromServer(): Promise<CampusDB | null> {
@@ -475,6 +558,7 @@ export async function loginUser(email: string, password: string) {
         };
         listeners.forEach((listener) => listener());
         void hydrateFromServer();
+        void syncPushTokenToServer();
         return authResult.user;
       }
     }
@@ -504,6 +588,7 @@ export async function loginUser(email: string, password: string) {
           await AsyncStorage.setItem(SESSION_KEY, localSessionUserId);
           dbState = { ...dbState, users: dbState.users.map((candidate) => candidate.id === authResult.user?.id ? authResult.user as CampusUser : candidate), currentUserId: localSessionUserId };
           listeners.forEach((listener) => listener());
+          void syncPushTokenToServer();
           return authResult.user;
         }
       }
@@ -549,6 +634,7 @@ export async function loginUser(email: string, password: string) {
       : scheduleByUserId;
     return { ...draft, currentUserId: user.id, scheduleByUserId: migratedScheduleByUserId };
   });
+  void syncPushTokenToServer();
   return user;
 }
 
@@ -624,10 +710,12 @@ export async function registerUser(input: {
       return link;
     }),
   }));
+  void syncPushTokenToServer();
   return newUser;
 }
 
 export function logoutUser() {
+  void removePushTokenFromServer();
   localSessionUserId = null;
   localAuthToken = null;
   void AsyncStorage.removeItem(SESSION_KEY);
@@ -641,6 +729,7 @@ export function deleteCurrentUser() {
     return;
   }
 
+  void removePushTokenFromServer();
   localSessionUserId = null;
   localAuthToken = null;
   void AsyncStorage.removeItem(SESSION_KEY);
