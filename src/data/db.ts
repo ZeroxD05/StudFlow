@@ -167,6 +167,15 @@ async function hydrateFromServer(): Promise<CampusDB | null> {
 
   try {
     const response = await fetch(`${SERVER_URL}/api/db`, { signal: controller.signal, headers: authHeaders() });
+    if (response.status === 401) {
+      localAuthToken = null;
+      localSessionUserId = null;
+      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+      await AsyncStorage.removeItem(SESSION_KEY);
+      dbState = { ...createDefaultDB(), currentUserId: null };
+      listeners.forEach((listener) => listener());
+      return null;
+    }
     if (!response.ok) {
       return null;
     }
