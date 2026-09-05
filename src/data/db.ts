@@ -44,7 +44,7 @@ export type CampusDB = {
 const STORAGE_KEY = "studflow-db";
 const SESSION_KEY = "studflow-session-user-id-v2";
 const AUTH_TOKEN_KEY = "studflow-auth-token-v1";
-const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
+const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://studflow.onrender.com" : "http://localhost:3001");
 
 const defaultUser: CampusUser = {
   id: "demo-user",
