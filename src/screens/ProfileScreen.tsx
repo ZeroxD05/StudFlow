@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [newsBody, setNewsBody] = useState("");
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
+  const isCentralAdmin = currentUser?.username === "ata";
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
     linkedEmail: currentUser?.linkedEmail ?? "",
@@ -356,12 +357,16 @@ export default function ProfileScreen() {
                 ) : null}
               </View>
             ))}
-            <Text style={styles.adminSubheading}>News veröffentlichen</Text>
-            <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
-            <TextInput value={newsBody} onChangeText={setNewsBody} placeholder="Nachricht der Hochschule" placeholderTextColor={colors.textMuted} style={[styles.adminInput, styles.newsAdminInput]} multiline />
-            <TouchableOpacity style={styles.primaryButton} onPress={async () => { if (!newsTitle.trim() || !newsBody.trim()) return; await createUniversityNews(newsTitle, newsBody); setNewsTitle(""); setNewsBody(""); }}>
-              <Text style={styles.primaryButtonText}>News veröffentlichen</Text>
-            </TouchableOpacity>
+            {!isCentralAdmin ? (
+              <>
+                <Text style={styles.adminSubheading}>News veröffentlichen</Text>
+                <TextInput value={newsTitle} onChangeText={setNewsTitle} placeholder="Titel" placeholderTextColor={colors.textMuted} style={styles.adminInput} />
+                <TextInput value={newsBody} onChangeText={setNewsBody} placeholder="Nachricht der Hochschule" placeholderTextColor={colors.textMuted} style={[styles.adminInput, styles.newsAdminInput]} multiline />
+                <TouchableOpacity style={styles.primaryButton} onPress={async () => { if (!newsTitle.trim() || !newsBody.trim()) return; await createUniversityNews(newsTitle, newsBody); setNewsTitle(""); setNewsBody(""); }}>
+                  <Text style={styles.primaryButtonText}>News veröffentlichen</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
             {(db.tenantNews ?? []).map((news) => (
               <View key={news.id} style={styles.newsAdminRow}>
                 {editingNewsId === news.id ? (
@@ -379,7 +384,7 @@ export default function ProfileScreen() {
                     <Text style={styles.newsAdminBody}>{news.body}</Text>
                     <View style={styles.newsAdminActions}>
                       <TouchableOpacity onPress={() => { setEditingNewsId(news.id); setNewsTitle(news.title); setNewsBody(news.body); }}><Ionicons name="create-outline" size={19} color={colors.primary} /></TouchableOpacity>
-                      <TouchableOpacity onPress={async () => { await deleteUniversityNews(news.id); }}><Ionicons name="trash-outline" size={19} color="#C0392B" /></TouchableOpacity>
+                      <TouchableOpacity onPress={async () => { await deleteUniversityNews(news.id); }} hitSlop={8}><Ionicons name="trash-outline" size={19} color="#C0392B" /></TouchableOpacity>
                     </View>
                   </>
                 )}

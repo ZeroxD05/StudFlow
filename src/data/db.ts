@@ -404,8 +404,12 @@ export async function updateUniversityNews(id: string, title: string, body: stri
 }
 
 export async function deleteUniversityNews(id: string) {
+  updateDb((draft) => ({ ...draft, tenantNews: (draft.tenantNews || []).filter((news) => news.id !== id) }), false);
   const response = await fetch(`${SERVER_URL}/api/admin/news/${encodeURIComponent(id)}`, { method: "DELETE", headers: authHeaders() });
-  if (!response.ok) throw new Error("News konnte nicht gelöscht werden.");
+  if (!response.ok) {
+    await hydrateFromServer();
+    throw new Error("News konnte nicht gelöscht werden.");
+  }
 }
 
 export async function createTenantAdmin(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string }) {
