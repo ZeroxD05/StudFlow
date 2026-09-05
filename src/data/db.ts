@@ -840,17 +840,6 @@ export function sendDirectMessageToFriend(friendId: string, text: string) {
     createdAt: new Date().toISOString(),
   };
 
-  updateDb((draft) => ({
-    ...draft,
-    directMessages: {
-      ...draft.directMessages,
-      [getDirectMessageThreadId(currentUser.id, friendId)]: [
-        ...(draft.directMessages[getDirectMessageThreadId(currentUser.id, friendId)] ?? []),
-        message,
-      ],
-    },
-  }), false);
-
   void fetch(`${SERVER_URL}/api/direct-messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -885,17 +874,6 @@ export function sendSupportMessage(text: string) {
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
     createdAt: new Date().toISOString(),
   };
-
-  updateDb((draft) => ({
-    ...draft,
-    directMessages: {
-      ...draft.directMessages,
-      [`support:${currentUser.id}`]: [
-        ...(draft.directMessages[`support:${currentUser.id}`] ?? []),
-        message,
-      ],
-    },
-  }), false);
 
   void fetch(`${SERVER_URL}/api/direct-messages`, {
     method: "POST",
