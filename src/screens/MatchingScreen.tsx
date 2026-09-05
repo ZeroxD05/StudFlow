@@ -91,7 +91,7 @@ function SwipeableFriendRow({ children, onBlock, onRemove, onToggleMute, isMuted
   );
 }
 
-export default function MatchingScreen() {
+export default function MatchingScreen({ navigation, route }: any) {
   const db = useAppDb();
   const currentUser = db.users.find((user) => user.id === db.currentUserId) ?? null;
   const friends = currentUser
@@ -119,6 +119,7 @@ export default function MatchingScreen() {
   };
   const isSupportChat = selectedFriendId === "support-account";
   const selectedFriend = friends.find((friend) => friend.id === selectedFriendId) ?? (isSupportChat ? supportContact : null);
+  const requestedFriendId = route?.params?.friendId ?? null;
   const messages = selectedFriend
     ? isSupportChat
       ? db.directMessages[`support:${currentUser?.id ?? ""}`] ?? []
@@ -129,6 +130,13 @@ export default function MatchingScreen() {
   const supportUnreadCount = getUnreadDirectMessageCount(supportMessages, currentUser?.id ?? null, Boolean(currentUser?.notificationsMuted || currentUser?.mutedChatThreadIds?.includes(supportThreadId)));
   const messagesScrollRef = useRef<ScrollView>(null);
   const activeThreadId = isSupportChat ? `support:${currentUser?.id ?? ""}` : currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
+
+  useEffect(() => {
+    if (requestedFriendId && friends.some((friend) => friend.id === requestedFriendId)) {
+      setSelectedFriendId(requestedFriendId);
+      navigation.setParams({ friendId: undefined });
+    }
+  }, [requestedFriendId, friends, navigation]);
 
   useEffect(() => {
     if (selectedFriend) {

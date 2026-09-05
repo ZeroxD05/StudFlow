@@ -617,7 +617,7 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           ) : (
             activeFriends.map((friend) => (
-              <View key={friend.id} style={styles.activeFriendRow}>
+              <TouchableOpacity key={friend.id} style={styles.activeFriendRow} onPress={() => navigation.navigate("Match", { friendId: friend.id })} activeOpacity={0.75}>
                 <View style={[styles.activeFriendAvatar, { backgroundColor: friend.avatarColor }]}>
                   <Text style={styles.activeFriendInitial}>{friend.name.charAt(0).toUpperCase()}</Text>
                 </View>
@@ -626,7 +626,7 @@ export default function DashboardScreen({ navigation }: any) {
                   <Text style={styles.activeFriendStatus}>Online</Text>
                 </View>
                 <View style={styles.onlineDot} />
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </Card>
