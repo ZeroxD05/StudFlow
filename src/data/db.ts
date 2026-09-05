@@ -6,6 +6,7 @@ import { BuddyProfile, CommunityPost, DirectMessage, GradeEntry, JobListing, Qui
 
 export type CampusUser = {
   id: string;
+  tenantId?: string;
   name: string;
   email: string;
   internalEmail?: string;
@@ -48,6 +49,7 @@ const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || (process.env.NODE_ENV === 
 
 const defaultUser: CampusUser = {
   id: "demo-user",
+  tenantId: "study2buddy-demo",
   name: "Ata",
   email: "ata2005hh@gmail.com",
   internalEmail: "ata@study2buddy.de",
@@ -478,6 +480,7 @@ export async function registerUser(input: {
 
   let newUser: CampusUser = {
     id: `user-${Date.now()}`,
+    tenantId: sanitizeUsername(input.campus ?? "study2buddy-demo"),
     name,
     email: buildStudyEmail(username),
     internalEmail: buildStudyEmail(username),

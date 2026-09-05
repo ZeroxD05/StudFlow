@@ -84,6 +84,7 @@ export type CommunityPost = {
 
 export type CampusUser = {
   id: string;
+  tenantId?: string;
   name: string;
   email: string;
   internalEmail?: string;

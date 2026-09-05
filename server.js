@@ -38,8 +38,9 @@ const io = new Server(server, {
 });
 
 const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-const createAuthToken = (userId) => {
-  const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 })).toString("base64url");
+const normalizeTenantId = (value) => String(value || "study2buddy-demo").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || "study2buddy-demo";
+const createAuthToken = (userId, tenantId) => {
+  const payload = Buffer.from(JSON.stringify({ userId, tenantId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 })).toString("base64url");
   const signature = crypto.createHmac("sha256", authSecret).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 };
@@ -51,7 +52,8 @@ const getAuthUser = (req) => {
   if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return data.exp > Date.now() ? db.users.find((user) => user.id === data.userId) ?? null : null;
+    const user = db.users.find((entry) => entry.id === data.userId);
+    return data.exp > Date.now() && user && user.tenantId === data.tenantId ? user : null;
   } catch {
     return null;
   }
@@ -100,7 +102,8 @@ function readDb() {
   try {
     const raw = fs.readFileSync(dbFile, "utf8");
     const parsed = JSON.parse(raw);
-    return { ...defaultDb, ...parsed, users: parsed.users ?? [], communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
+    const users = (parsed.users ?? []).map((user) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo" }));
+    return { ...defaultDb, ...parsed, users, communityPosts: parsed.communityPosts ?? [], directMessages: parsed.directMessages ?? {}, scheduleByUserId: parsed.scheduleByUserId ?? {} };
   } catch (error) {
     fs.writeFileSync(dbFile, JSON.stringify(defaultDb, null, 2));
     return { ...defaultDb };
@@ -109,7 +112,7 @@ function readDb() {
 
 function writeDb(nextDb) {
   ensureDbFile();
-  const users = (nextDb.users ?? []).map(({ online, ...user }) => user);
+  const users = (nextDb.users ?? []).map(({ online, ...user }) => ({ ...user, tenantId: user.tenantId || "study2buddy-demo" }));
   const safeDb = { ...defaultDb, ...nextDb, currentUserId: null, users, communityPosts: nextDb.communityPosts ?? [], directMessages: nextDb.directMessages ?? {} };
   fs.writeFileSync(dbFile, JSON.stringify(safeDb, null, 2));
   void persistCloudDb(safeDb);
@@ -157,13 +160,20 @@ async function hydrateCloudDb() {
 }
 
 function emitDb() {
-  io.emit("db:update", {
-    ...db,
-    users: db.users.map((user) => ({
-      ...user,
-      online: user.showOnlineStatus !== false && onlineUserIds.has(user.id),
-    })),
-  });
+  for (const socket of io.sockets.sockets.values()) {
+    const tenantId = socket.data.tenantId;
+    if (!tenantId) continue;
+    const tenantUsers = db.users.filter((user) => user.tenantId === tenantId);
+    const tenantUserIds = new Set(tenantUsers.map((user) => user.id));
+    socket.emit("db:update", {
+      ...db,
+      currentUserId: socket.data.userId || null,
+      users: tenantUsers.map((user) => ({ ...user, online: user.showOnlineStatus !== false && onlineUserIds.has(user.id) })),
+      communityPosts: db.communityPosts.filter((post) => tenantUserIds.has(post.authorId)),
+      directMessages: Object.fromEntries(Object.entries(db.directMessages || {}).filter(([threadId]) => threadId.split(":").some((id) => tenantUserIds.has(id)))),
+      scheduleByUserId: Object.fromEntries(Object.entries(db.scheduleByUserId || {}).filter(([userId]) => tenantUserIds.has(userId))),
+    });
+  }
 }
 
 let db = readDb();
@@ -176,6 +186,7 @@ async function applySupportPassword() {
   if (!user) {
     user = {
       id: "demo-user",
+      tenantId: "study2buddy-demo",
       name: "Ata",
       email: "ata2005hh@gmail.com",
       internalEmail: "ata@study2buddy.de",
@@ -215,9 +226,18 @@ app.get("/health", (_, res) => {
 });
 
 app.get("/api/db", (_, res) => {
-  const user = getAuthUser(_);
-  if (!user) return res.status(401).json({ error: "Authentifizierung erforderlich." });
-  res.json(db);
+  const authUser = getAuthUser(_);
+  if (!authUser) return res.status(401).json({ error: "Authentifizierung erforderlich." });
+  const tenantUsers = db.users.filter((entry) => entry.tenantId === authUser.tenantId);
+  const tenantUserIds = new Set(tenantUsers.map((entry) => entry.id));
+  res.json({
+    ...db,
+    currentUserId: authUser.id,
+    users: tenantUsers,
+    communityPosts: db.communityPosts.filter((post) => tenantUserIds.has(post.authorId)),
+    directMessages: Object.fromEntries(Object.entries(db.directMessages || {}).filter(([threadId]) => threadId.split(":").some((id) => tenantUserIds.has(id)))),
+    scheduleByUserId: Object.fromEntries(Object.entries(db.scheduleByUserId || {}).filter(([userId]) => tenantUserIds.has(userId))),
+  });
 });
 
 app.post("/api/auth/register", async (req, res) => {
@@ -249,6 +269,7 @@ app.post("/api/auth/register", async (req, res) => {
 
   const user = {
     id: createId("user"),
+    tenantId: normalizeTenantId(req.body?.tenantId || campus),
     name: cleanName,
     email: candidateEmail,
     internalEmail: candidateEmail,
@@ -267,7 +288,7 @@ app.post("/api/auth/register", async (req, res) => {
   db.currentUserId = user.id;
   db = writeDb(db);
   emitDb();
-  res.status(201).json({ user, token: createAuthToken(user.id), message: "Registrierung erfolgreich." });
+  res.status(201).json({ user, token: createAuthToken(user.id, user.tenantId), message: "Registrierung erfolgreich." });
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -289,7 +310,7 @@ app.post("/api/auth/login", async (req, res) => {
   db.currentUserId = user.id;
   db = writeDb(db);
   emitDb();
-  res.json({ user, token: createAuthToken(user.id), message: "Login erfolgreich." });
+  res.json({ user, token: createAuthToken(user.id, user.tenantId), message: "Login erfolgreich." });
 });
 
 app.get("/api/users", requireAuth, (_, res) => {
@@ -310,7 +331,10 @@ app.patch("/api/schedules", requireAuth, (req, res) => {
 });
 
 app.patch("/api/db", requireAuth, (req, res) => {
-  const users = Array.isArray(req.body?.users) ? req.body.users : db.users;
+  const tenantId = req.authUser.tenantId;
+  const tenantUserIds = new Set(db.users.filter((user) => user.tenantId === tenantId).map((user) => user.id));
+  const incomingUsers = Array.isArray(req.body?.users) ? req.body.users.filter((user) => tenantUserIds.has(user.id)) : [];
+  const users = db.users.map((user) => incomingUsers.find((incoming) => incoming.id === user.id) ?? user);
   const seenUsernames = new Set();
   const seenUniversityEmails = new Set();
   const seenAppEmails = new Set();
@@ -331,7 +355,13 @@ app.patch("/api/db", requireAuth, (req, res) => {
     if (username) seenUsernames.add(username);
     if (appEmail) seenAppEmails.add(appEmail);
   }
-  db = writeDb(req.body || db);
+  db = writeDb({
+    ...db,
+    users,
+    communityPosts: db.communityPosts.filter((post) => !tenantUserIds.has(post.authorId)).concat((req.body?.communityPosts || []).filter((post) => tenantUserIds.has(post.authorId))),
+    directMessages: { ...db.directMessages, ...(Object.fromEntries(Object.entries(req.body?.directMessages || {}).filter(([threadId]) => threadId.split(":").some((id) => tenantUserIds.has(id))))) },
+    scheduleByUserId: { ...db.scheduleByUserId, ...(Object.fromEntries(Object.entries(req.body?.scheduleByUserId || {}).filter(([userId]) => tenantUserIds.has(userId)))) },
+  });
   emitDb();
   res.json(db);
 });
@@ -419,6 +449,10 @@ app.post("/api/direct-messages", requireAuth, (req, res) => {
   if (!threadId || !String(text || "").trim()) {
     return res.status(400).json({ error: "Thread, Sender oder Text fehlen." });
   }
+  const tenantUserIds = new Set(db.users.filter((user) => user.tenantId === req.authUser.tenantId).map((user) => user.id));
+  if (!threadId.split(":").some((id) => tenantUserIds.has(id))) {
+    return res.status(403).json({ error: "Thread gehört nicht zu deiner Hochschule." });
+  }
 
   const message = {
     id: createId("dm"),
@@ -454,6 +488,7 @@ io.on("connection", (socket) => {
     }
 
     socket.data.userId = userId;
+    socket.data.tenantId = db.users.find((user) => user.id === userId)?.tenantId;
     onlineUserIds.add(userId);
     emitDb();
   });
