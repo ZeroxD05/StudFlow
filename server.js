@@ -322,7 +322,7 @@ app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body || {};
   const input = String(email || "").trim().toLowerCase();
 
-  const user = db.users.find((candidate) => candidate.email.toLowerCase() === input || candidate.username.toLowerCase() === input);
+  const user = db.users.find((candidate) => candidate.email.toLowerCase() === input || candidate.username.toLowerCase() === input || (candidate.linkedEmail ?? "").toLowerCase() === input);
 
   const passwordMatches = user
     ? user.password.startsWith("$2")
