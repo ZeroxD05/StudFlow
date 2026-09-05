@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { createNavigationContainerRef, NavigationContainer, DefaultTheme } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { BottomTabBarProps, createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import DashboardScreen from "@/screens/DashboardScreen";
 import MatchingScreen from "@/screens/MatchingScreen";
@@ -41,6 +41,57 @@ const getScheduleStart = (time: string) => {
   const match = time.match(/^(\d{1,2}):(\d{2})/);
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 };
+
+function AnimatedTabBar({ state, descriptors, navigation, unreadMessages }: BottomTabBarProps & { unreadMessages: number }) {
+  const [barWidth, setBarWidth] = useState(0);
+  const indicatorPosition = useRef(new Animated.Value(state.index)).current;
+  const tabWidth = barWidth / state.routes.length;
+
+  useEffect(() => {
+    Animated.timing(indicatorPosition, {
+      toValue: state.index,
+      duration: 230,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [indicatorPosition, state.index]);
+
+  return (
+    <View style={styles.tabBar} onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}>
+      {barWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.tabIndicator, { width: tabWidth * 0.34, transform: [{ translateX: Animated.multiply(indicatorPosition, tabWidth) }] }]}
+        />
+      ) : null}
+      {state.routes.map((route, index) => {
+        const focused = state.index === index;
+        const color = focused ? colors.primary : colors.textMuted;
+        const iconName = focused ? icons[route.name] : `${icons[route.name]}-outline`;
+        const badge = route.name === "Match" && unreadMessages > 0 ? (unreadMessages > 99 ? "99+" : unreadMessages) : null;
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            accessibilityRole="button"
+            accessibilityState={focused ? { selected: true } : {}}
+            style={styles.tabButton}
+            onPress={() => {
+              const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+              if (!focused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            }}
+            onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+          >
+            <Ionicons name={iconName as keyof typeof Ionicons.glyphMap} size={24} color={color} />
+            {badge ? <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{badge}</Text></View> : null}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function AppNavigator() {
   const { currentUserId, directMessages, users, todaySchedule } = useAppDb();
@@ -207,37 +258,8 @@ export default function AppNavigator() {
             flex: 1,
             backgroundColor: colors.background,
           },
-          tabBarStyle: {
-            backgroundColor: colors.white,
-            borderTopColor: colors.border,
-            height: 76,
-            paddingBottom: 10,
-            paddingTop: 8,
-            shadowColor: "#0F2A5D",
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 6,
-            elevation: 6,
-          },
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={(focused ? icons[route.name] : `${icons[route.name]}-outline`) as any}
-              size={size - 2}
-              color={color}
-            />
-          ),
-          tabBarBadge: route.name === "Match" && unreadMessages > 0 ? (unreadMessages > 99 ? "99+" : unreadMessages) : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: "#D92D3F",
-            color: colors.white,
-            fontSize: 11,
-            fontWeight: "800",
-            minWidth: 18,
-            height: 18,
-            lineHeight: 16,
-            paddingBottom: 2,
-          },
         })}
+        tabBar={(props) => <AnimatedTabBar {...props} unreadMessages={unreadMessages} />}
       >
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
         <Tab.Screen name="Match" component={MatchingScreen} />
@@ -273,6 +295,11 @@ export default function AppNavigator() {
 
 const styles = StyleSheet.create({
   appRoot: { flex: 1 },
+  tabBar: { height: 76, flexDirection: "row", alignItems: "center", paddingTop: 8, paddingBottom: 10, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border, shadowColor: "#0F2A5D", shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 6 },
+  tabButton: { flex: 1, height: 58, alignItems: "center", justifyContent: "center", position: "relative" },
+  tabIndicator: { position: "absolute", left: 0, bottom: 5, height: 4, borderRadius: 2, backgroundColor: colors.accent },
+  tabBadge: { position: "absolute", top: 4, right: "28%", minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, backgroundColor: "#D92D3F", alignItems: "center", justifyContent: "center" },
+  tabBadgeText: { color: colors.white, fontSize: 11, lineHeight: 13, fontWeight: "800", textAlign: "center" },
   notificationBanner: { position: "absolute", top: 58, left: 16, right: 16, backgroundColor: colors.primary, borderRadius: 16, shadowColor: colors.primaryDark, shadowOpacity: 0.24, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 8 },
   notificationTouchable: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 },
   notificationAvatar: { width: 38, height: 38, borderRadius: 19, marginRight: 10, alignItems: "center", justifyContent: "center" },
