@@ -450,6 +450,13 @@ app.post("/api/admin/users", requireAuth, async (req, res) => {
   res.status(201).json(user);
 });
 
+app.get("/api/admin/users", requireAuth, (req, res) => {
+  const visibleUsers = req.authUser.username === "ata"
+    ? db.users.filter((user) => user.role === "admin" || user.role === "lecturer" || user.role === "student")
+    : db.users.filter((user) => user.tenantId === req.authUser.tenantId && ((req.authUser.role === "admin" && user.role === "lecturer") || (req.authUser.role === "lecturer" && user.role === "student")));
+  res.json(visibleUsers.map(({ password, ...user }) => user));
+});
+
 app.patch("/api/schedules", requireAuth, (req, res) => {
   const userId = req.authUser.id;
   const schedule = Array.isArray(req.body?.schedule) ? req.body.schedule : null;

@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createManagedUser, createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
+import { createManagedUser, createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listManagedUsers, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
   const [managedForm, setManagedForm] = useState({ name: "", username: "", linkedEmail: "", password: "" });
+  const [managedUsers, setManagedUsers] = useState<Array<{ id: string; name: string; username: string; linkedEmail?: string; role?: string }>>([]);
   const [adminFeedback, setAdminFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const isCentralAdmin = currentUser?.username === "ata";
@@ -48,6 +49,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (currentUser?.role === "admin") {
       listTenants().then(setTenants).catch(() => undefined);
+    }
+  }, [currentUser?.id, currentUser?.role]);
+
+  useEffect(() => {
+    if (currentUser?.role === "admin" || currentUser?.role === "lecturer") {
+      listManagedUsers().then(setManagedUsers).catch(() => undefined);
     }
   }, [currentUser?.id, currentUser?.role]);
 
@@ -372,6 +379,20 @@ export default function ProfileScreen() {
                 )}
               </View>
             ))}
+            {managedUsers.length > 0 ? (
+              <View style={styles.managedUsersSection}>
+                <Text style={styles.adminSubheading}>{isCentralAdmin ? "Verwaltete Konten" : "Meine Dozenten"}</Text>
+                {managedUsers.map((managedUser) => (
+                  <View key={managedUser.id} style={styles.managedUserRow}>
+                    <View style={styles.managedUserInfo}>
+                      <Text style={styles.tenantName}>{managedUser.name}</Text>
+                      <Text style={styles.tenantMeta}>{managedUser.username} · {managedUser.linkedEmail ?? "Keine Uni-Mail"}</Text>
+                    </View>
+                    <Text style={styles.managedUserRole}>{managedUser.role === "lecturer" ? "Dozent" : managedUser.role === "admin" ? "Admin" : "Schüler"}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
             {isCentralAdmin ? <>
             <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
             <Text style={styles.adminHelpText}>Dieses Formular erstellt das Admin-Konto direkt. Eine separate Registrierung ist danach nicht nötig. Die Admin-Mail darf von der Uni-Domain abweichen.</Text>
@@ -729,6 +750,10 @@ const styles = StyleSheet.create({
   adminFeedback: { fontSize: 12, lineHeight: 17, marginTop: spacing.sm },
   adminFeedbackError: { color: "#C0392B" },
   adminFeedbackSuccess: { color: colors.success },
+  managedUsersSection: { marginTop: spacing.md },
+  managedUserRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  managedUserInfo: { flex: 1, minWidth: 0 },
+  managedUserRole: { color: colors.primary, fontSize: 11, fontWeight: "800" },
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   adminHelpText: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },

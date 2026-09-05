@@ -432,6 +432,12 @@ export async function createManagedUser(input: { tenantId: string; name: string;
 
 export const createTenantAdmin = (input: Omit<Parameters<typeof createManagedUser>[0], "role">) => createManagedUser({ ...input, role: "admin" });
 
+export async function listManagedUsers() {
+  const response = await fetch(`${SERVER_URL}/api/admin/users`, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Konten konnten nicht geladen werden.");
+  return await response.json() as CampusUser[];
+}
+
 export const getCurrentUser = () =>
   dbState.users.find((user) => user.id === dbState.currentUserId) ?? null;
 
