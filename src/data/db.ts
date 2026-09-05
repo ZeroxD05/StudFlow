@@ -397,6 +397,17 @@ export async function createUniversityNews(title: string, body: string) {
   return await response.json() as UniversityNews;
 }
 
+export async function updateUniversityNews(id: string, title: string, body: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/news/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ title, body }) });
+  if (!response.ok) throw new Error("News konnte nicht aktualisiert werden.");
+  return await response.json() as UniversityNews;
+}
+
+export async function deleteUniversityNews(id: string) {
+  const response = await fetch(`${SERVER_URL}/api/admin/news/${encodeURIComponent(id)}`, { method: "DELETE", headers: authHeaders() });
+  if (!response.ok) throw new Error("News konnte nicht gelöscht werden.");
+}
+
 export async function createTenantAdmin(input: { tenantId: string; name: string; username: string; linkedEmail: string; password: string }) {
   const response = await fetch(`${SERVER_URL}/api/admin/users`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(input) });
   if (!response.ok) throw new Error("Uni-Admin konnte nicht angelegt werden.");

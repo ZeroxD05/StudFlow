@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, listTenants, logoutUser, updateCurrentUser, updateTenant, useAppDb } from "@/data/db";
+import { createTenant, createTenantAdmin, createUniversityNews, deleteCurrentUser, deleteTenant, deleteUniversityNews, listTenants, logoutUser, updateCurrentUser, updateTenant, updateUniversityNews, useAppDb } from "@/data/db";
 import { colors, radius, spacing } from "@/theme/theme";
 
 export default function ProfileScreen() {
@@ -21,6 +21,7 @@ export default function ProfileScreen() {
   const [editingAdminEmail, setEditingAdminEmail] = useState("");
   const [newsTitle, setNewsTitle] = useState("");
   const [newsBody, setNewsBody] = useState("");
+  const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({ tenantId: "", name: "", username: "", linkedEmail: "", password: "" });
   const [form, setForm] = useState({
     name: currentUser?.name ?? "",
@@ -361,6 +362,29 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.primaryButton} onPress={async () => { if (!newsTitle.trim() || !newsBody.trim()) return; await createUniversityNews(newsTitle, newsBody); setNewsTitle(""); setNewsBody(""); }}>
               <Text style={styles.primaryButtonText}>News veröffentlichen</Text>
             </TouchableOpacity>
+            {(db.tenantNews ?? []).map((news) => (
+              <View key={news.id} style={styles.newsAdminRow}>
+                {editingNewsId === news.id ? (
+                  <>
+                    <TextInput value={newsTitle} onChangeText={setNewsTitle} style={styles.adminInput} placeholder="Titel" placeholderTextColor={colors.textMuted} />
+                    <TextInput value={newsBody} onChangeText={setNewsBody} style={[styles.adminInput, styles.newsAdminInput]} placeholder="Text" placeholderTextColor={colors.textMuted} multiline />
+                    <View style={styles.newsAdminActions}>
+                      <TouchableOpacity style={styles.smallSaveButton} onPress={async () => { await updateUniversityNews(news.id, newsTitle, newsBody); setEditingNewsId(null); setNewsTitle(""); setNewsBody(""); }}><Text style={styles.smallSaveText}>Speichern</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingNewsId(null)}><Text style={styles.cancelText}>Abbrechen</Text></TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.newsAdminTitle}>{news.title}</Text>
+                    <Text style={styles.newsAdminBody}>{news.body}</Text>
+                    <View style={styles.newsAdminActions}>
+                      <TouchableOpacity onPress={() => { setEditingNewsId(news.id); setNewsTitle(news.title); setNewsBody(news.body); }}><Ionicons name="create-outline" size={19} color={colors.primary} /></TouchableOpacity>
+                      <TouchableOpacity onPress={async () => { await deleteUniversityNews(news.id); }}><Ionicons name="trash-outline" size={19} color="#C0392B" /></TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+            ))}
             <Text style={styles.adminSubheading}>Uni-Admin anlegen</Text>
             {(["tenantId", "name", "username", "linkedEmail", "password"] as const).map((field) => (
               <TextInput key={field} value={adminForm[field]} onChangeText={(value) => setAdminForm((current) => ({ ...current, [field]: value }))} placeholder={field === "tenantId" ? "Tenant-ID" : field} placeholderTextColor={colors.textMuted} secureTextEntry={field === "password"} style={[styles.adminInput, field !== "tenantId" && styles.adminFieldSpacing]} autoCapitalize="none" />
@@ -679,6 +703,11 @@ const styles = StyleSheet.create({
   adminSubheading: { color: colors.textPrimary, fontWeight: "800", marginTop: spacing.lg, marginBottom: spacing.sm },
   newsAdminInput: { minHeight: 90, textAlignVertical: "top", marginTop: spacing.sm },
   adminFieldSpacing: { marginTop: spacing.sm },
+  newsAdminRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm, marginTop: spacing.sm },
+  newsAdminTitle: { color: colors.textPrimary, fontWeight: "800", fontSize: 13 },
+  newsAdminBody: { color: colors.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 3 },
+  newsAdminActions: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.sm },
+  cancelText: { color: colors.textMuted, fontSize: 12, fontWeight: "700" },
   legalLinks: {
     flexDirection: "row",
     justifyContent: "center",

@@ -391,6 +391,28 @@ app.post("/api/admin/news", requireTenantAdmin, (req, res) => {
   res.status(201).json(news);
 });
 
+app.patch("/api/admin/news/:newsId", requireTenantAdmin, (req, res) => {
+  const news = (db.tenantNews || []).find((entry) => entry.id === req.params.newsId && entry.tenantId === req.authUser.tenantId);
+  const title = String(req.body?.title || "").trim();
+  const body = String(req.body?.body || "").trim();
+  if (!news) return res.status(404).json({ error: "News nicht gefunden." });
+  if (!title || !body) return res.status(400).json({ error: "Titel und Inhalt fehlen." });
+  news.title = title;
+  news.body = body;
+  db = writeDb(db);
+  emitDb();
+  res.json(news);
+});
+
+app.delete("/api/admin/news/:newsId", requireTenantAdmin, (req, res) => {
+  const exists = (db.tenantNews || []).some((entry) => entry.id === req.params.newsId && entry.tenantId === req.authUser.tenantId);
+  if (!exists) return res.status(404).json({ error: "News nicht gefunden." });
+  db.tenantNews = (db.tenantNews || []).filter((entry) => entry.id !== req.params.newsId);
+  db = writeDb(db);
+  emitDb();
+  res.json({ ok: true });
+});
+
 app.post("/api/admin/users", requireAdmin, async (req, res) => {
   const { tenantId, name, username, linkedEmail, password } = req.body || {};
   const tenant = (db.tenants || []).find((entry) => entry.id === tenantId);
