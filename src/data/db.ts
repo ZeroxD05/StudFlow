@@ -536,6 +536,24 @@ export function getDirectMessageThreadId(firstUserId: string, secondUserId: stri
   return `dm:${[firstUserId, secondUserId].sort().join(":")}`;
 }
 
+export function markDirectMessagesAsRead(threadId: string) {
+  const currentUser = getCurrentUser();
+  if (!currentUser || !threadId) {
+    return;
+  }
+
+  updateDb((draft) => ({
+    ...draft,
+    directMessages: {
+      ...draft.directMessages,
+      [threadId]: (draft.directMessages[threadId] ?? []).map((message) => ({
+        ...message,
+        readByUserIds: [...new Set([...(message.readByUserIds ?? []), currentUser.id])],
+      })),
+    },
+  }));
+}
+
 export function sendDirectMessageToFriend(friendId: string, text: string) {
   const currentUser = getCurrentUser();
   const trimmed = text.trim();

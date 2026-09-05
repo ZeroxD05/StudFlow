@@ -339,10 +339,12 @@ app.post("/api/direct-messages", (req, res) => {
 
   const message = {
     id: createId("dm"),
+    senderId,
     sender: senderId === db.currentUserId ? "me" : "match",
     text: String(text).trim(),
     timestamp: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
     createdAt: new Date().toISOString(),
+    readByUserIds: [],
   };
 
   db.directMessages[threadId] = [...(db.directMessages[threadId] || []), message];

@@ -8,6 +8,7 @@ import ScheduleImportScreen from "@/screens/ScheduleImportScreen";
 import GradesScreen from "@/screens/GradesScreen";
 import CommunityScreen from "@/screens/CommunityScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
+import { useAppDb } from "@/data/db";
 import { colors } from "@/theme/theme";
 
 const Tab = createBottomTabNavigator();
@@ -33,6 +34,14 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function AppNavigator() {
+  const { currentUserId, directMessages } = useAppDb();
+  const unreadMessages = currentUserId
+    ? Object.values(directMessages).reduce((total, messages) => total + messages.filter((message) => {
+        const isIncoming = message.senderId ? message.senderId !== currentUserId : message.sender !== "me";
+        return isIncoming && !message.readByUserIds?.includes(currentUserId);
+      }).length, 0)
+    : 0;
+
   return (
     <NavigationContainer theme={navTheme}>
       <Tab.Navigator
@@ -66,6 +75,16 @@ export default function AppNavigator() {
               color={color}
             />
           ),
+          tabBarBadge: route.name === "Match" && unreadMessages > 0 ? (unreadMessages > 99 ? "99+" : unreadMessages) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: "#D92D3F",
+            color: colors.white,
+            fontSize: 11,
+            fontWeight: "800",
+            minWidth: 18,
+            height: 18,
+            lineHeight: 18,
+          },
         })}
       >
         <Tab.Screen name="Dashboard" component={DashboardScreen} />

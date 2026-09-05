@@ -20,6 +20,7 @@ export type DirectMessage = {
   text: string;
   timestamp: string;
   createdAt?: string;
+  readByUserIds?: string[];
 };
 
 export type ScheduleItem = {

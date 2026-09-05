@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
+import { acceptFriendRequest, addFriend, blockFriend, getDirectMessageThreadId, markDirectMessagesAsRead, rejectFriendRequest, removeFriend, sendDirectMessageToFriend, sendSupportMessage, useAppDb } from "@/data/db";
 import { colors, radius, spacing, typography } from "@/theme/theme";
 import { DirectMessage } from "@/types";
 
@@ -57,12 +57,19 @@ export default function MatchingScreen() {
       : db.directMessages[currentUser ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : ""] ?? db.directMessages[selectedFriend.id] ?? []
     : [];
   const messagesScrollRef = useRef<ScrollView>(null);
+  const activeThreadId = isSupportChat ? `support:${currentUser?.id ?? ""}` : currentUser && selectedFriend ? getDirectMessageThreadId(currentUser.id, selectedFriend.id) : "";
 
   useEffect(() => {
     if (selectedFriend) {
       requestAnimationFrame(() => messagesScrollRef.current?.scrollToEnd({ animated: true }));
     }
   }, [messages.length, selectedFriendId]);
+
+  useEffect(() => {
+    if (selectedFriend && activeThreadId) {
+      markDirectMessagesAsRead(activeThreadId);
+    }
+  }, [activeThreadId, messages.length, selectedFriendId]);
 
   useEffect(() => {
     if (!selectedFriend || Platform.OS === "web") {
