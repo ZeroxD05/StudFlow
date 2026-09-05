@@ -477,6 +477,17 @@ app.delete("/api/admin/users/:userId", requireAuth, (req, res) => {
   const target = db.users.find((user) => user.id === req.params.userId);
   if (!target || !canManageManagedUser(req.authUser, target)) return res.status(403).json({ error: "Keine Berechtigung für dieses Konto." });
   db.users = db.users.filter((user) => user.id !== target.id);
+  db.users = db.users.map((user) => ({
+    ...user,
+    friends: (user.friends || []).filter((friendId) => friendId !== target.id),
+    friendRequests: (user.friendRequests || []).filter((friendId) => friendId !== target.id),
+  }));
+  db.communityPosts = (db.communityPosts || [])
+    .filter((post) => post.authorId !== target.id)
+    .map((post) => ({ ...post, commentsList: (post.commentsList || []).filter((comment) => comment.authorId !== target.id), comments: (post.commentsList || []).filter((comment) => comment.authorId !== target.id).length }));
+  db.directMessages = Object.fromEntries(Object.entries(db.directMessages || {}).filter(([threadId]) => !threadId.split(":").includes(target.id)));
+  if (db.scheduleByUserId) delete db.scheduleByUserId[target.id];
+  db.tenants = (db.tenants || []).map((tenant) => tenant.adminEmail === target.linkedEmail ? { ...tenant, adminEmail: undefined } : tenant);
   db = writeDb(db);
   emitDb();
   res.json({ ok: true });
